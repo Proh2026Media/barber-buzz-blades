@@ -1613,6 +1613,10 @@ export type Database = {
         Args: { p_shop_ref: string };
         Returns: Json;
       };
+      get_public_shop_font_faces: {
+        Args: { p_shop_id: string; p_font_url: string };
+        Returns: Json;
+      };
       get_public_shop_branding: {
         Args: { p_shop_ref: string };
         Returns: {

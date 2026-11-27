@@ -1,8 +1,7 @@
 import { usePreviewDocument } from "@/components/visual/preview-document";
 import { useEffect } from "react";
 import { customBrandFontFamily } from "@/lib/shop/branding";
-import { normalizeFontFaces, type BrandFontFaceRecord } from "@/lib/shop/font-files";
-import { inferFontFile } from "@/lib/shop/font-files";
+import { inferFontFile, normalizeFontFaces } from "@/lib/shop/font-files";
 
 /** Carrega a fonte própria sem injetar CSS ou alterar a tipografia geral do sistema. */
 export function BrandFontFace({
@@ -10,7 +9,7 @@ export function BrandFontFace({
   faces,
 }: {
   url: string | null | undefined;
-  faces?: BrandFontFaceRecord[] | unknown;
+  faces?: unknown;
 }) {
   const previewDocument = usePreviewDocument();
   const normalized = normalizeFontFaces(faces);
@@ -34,20 +33,10 @@ export function BrandFontFace({
           style: source.style,
         }),
     );
-    let active = true;
-    for (const face of loadedFaces) {
-      void face
-        .load()
-        .then((loaded) => {
-          if (active) targetDocument.fonts.add(loaded);
-        })
-        .catch(() => {
-          // A interface mantém a fonte curada como fallback se um peso falhar.
-        });
-    }
+    // Cadastre toda a família antes da seleção. O navegador busca o arquivo usado pelo texto.
+    for (const face of loadedFaces) targetDocument.fonts.add(face);
 
     return () => {
-      active = false;
       for (const face of loadedFaces) targetDocument.fonts.delete(face);
     };
     // `key` torna o array estável para o efeito sem depender da referência recebida.

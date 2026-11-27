@@ -1,6 +1,5 @@
 import { Eye, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { BrandFontFace } from "./BrandFontFace";
 import { DevicePreview, StatusBadge } from "@/components/visual";
 import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
@@ -9,7 +8,6 @@ import { LoginScreenPreview, type LoginScreenPreviewProps } from "./LoginScreenP
 type LoginPreviewDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fontFaces?: unknown;
   preview: Omit<LoginScreenPreviewProps, "framed" | "className">;
 };
 
@@ -18,7 +16,6 @@ export function LoginPreviewDialog({
   open,
   onOpenChange,
   preview,
-  fontFaces,
 }: LoginPreviewDialogProps) {
   const { t } = useI18n();
   // A tela de entrada muda com a largura real do aparelho: no celular só a versão de
@@ -61,7 +58,6 @@ export function LoginPreviewDialog({
         >
           {wide ? (
             <DevicePreview>
-              <BrandFontFace url={preview.customFontUrl} faces={fontFaces} />
               <LoginScreenPreview {...preview} framed={false} />
             </DevicePreview>
           ) : (

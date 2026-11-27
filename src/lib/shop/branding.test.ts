@@ -37,6 +37,8 @@ import {
 } from "./branding.ts";
 import {
   analyzeFontFiles,
+  primaryFontFace,
+  fontStyleOptions,
   fontFaceLabel,
   inferFontFile,
   normalizeFontFaces,
@@ -82,6 +84,30 @@ test("custom font validation accepts web formats and keeps the 5 MB limit", () =
     validateBrandFont({ type: "font/ttf", size: 5 * 1024 * 1024 + 1, name: "brand.ttf" }) ?? "",
     /5 MB/i,
   );
+});
+
+test("o arquivo principal privilegia a letra normal independentemente da ordem do envio", () => {
+  const bookItalic = { weight: 400, style: "italic" } as const;
+  const medium = { weight: 500, style: "normal" } as const;
+  const bold = { weight: 700, style: "normal" } as const;
+  const book = { weight: 400, style: "normal" } as const;
+  assert.equal(primaryFontFace([bookItalic, bold, medium]), medium);
+  assert.equal(primaryFontFace([medium, bookItalic, bold]), medium);
+  assert.equal(primaryFontFace([bookItalic, medium, book]), book);
+  assert.equal(primaryFontFace([bookItalic]), bookItalic);
+  assert.equal(primaryFontFace([]), undefined);
+});
+
+test("fontes variáveis oferecem os pesos do próprio estilo, inclusive com o itálico enviado primeiro", () => {
+  const options = fontStyleOptions([
+    { file_name: "Marca-Italic-VF.woff2", weight: 400, style: "italic" },
+    { file_name: "Marca-Regular-VF.woff2", weight: 400, style: "normal" },
+  ]);
+  assert.equal(options.length, 18);
+  assert.deepEqual(options.filter((face) => face.weight === 500), [
+    { weight: 500, style: "normal" },
+    { weight: 500, style: "italic" },
+  ]);
 });
 
 test("font files are recognized as weights and styles of a family", () => {

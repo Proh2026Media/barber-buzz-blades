@@ -61,6 +61,8 @@ import { applyShopFavicon } from "@/lib/shop/favicon";
 import { persistBrandIdentity } from "@/lib/shop/branding-persist";
 import {
   analyzeFontFiles,
+  primaryFontFace,
+  fontStyleOptions,
   inferFontFile,
   normalizeFontFaces,
   type PendingBrandFontFace,
@@ -358,10 +360,7 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
         style: face.style,
       }))
     : normalizeFontFaces(draft.custom_font_faces);
-  const previewFontUrl =
-    previewFontFaces.find((face) => face.weight === 400)?.url ??
-    previewFontFaces[0]?.url ??
-    draft.custom_font_url;
+  const previewFontUrl = primaryFontFace(previewFontFaces)?.url ?? draft.custom_font_url;
   // No celular, mantém a amostra reduzida; em telas maiores usa o viewport escolhido.
   const loginScreen = (
     <LoginScreenPreview lojaId={settings.barbershop_id}
@@ -375,6 +374,7 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
       accentColor={draft.accent_color}
       fontFamily={draft.font_family}
       customFontUrl={previewFontUrl}
+      fontFaces={previewFontFaces}
       headerFontWeight={draft.header_font_weight}
       headerFontStyle={draft.header_font_style}
       cornerStyle={draft.corner_style}
@@ -389,17 +389,9 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
   const hasVariableFont = previewFontFaces.some(
     (face) => inferFontFile({ name: face.file_name }).variable,
   );
-  const headerFaceOptions = hasVariableFont
-    ? Array.from({ length: 9 }, (_, index) => ({
-        weight: (index + 1) * 100,
-        style: previewFontFaces[0]?.style ?? ("normal" as const),
-      }))
-    : previewFontFaces.length
-      ? previewFontFaces.map(({ weight, style }) => ({ weight, style }))
-      : [400, 500, 600, 700, 800, 900].map((weight) => ({
-          weight,
-          style: "normal" as const,
-        }));
+  const headerFaceOptions = previewFontFaces.length
+    ? fontStyleOptions(previewFontFaces)
+    : [400, 500, 600, 700, 800, 900].map((weight) => ({ weight, style: "normal" as const }));
   const previewStyle = brandVariables(
     draft.primary_color,
     draft.accent_color,
@@ -492,10 +484,7 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
       return [...result.faces];
     });
     setFontKind(result.kind);
-    const preferredFace =
-      result.faces.find((face) => face.weight === 400 && face.style === "normal") ??
-      result.faces.find((face) => face.style === "normal") ??
-      result.faces[0]!;
+    const preferredFace = primaryFontFace(result.faces)!;
     update({
       custom_font_name: result.family,
       header_font_weight: preferredFace.weight,
@@ -861,7 +850,6 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
               </PhoneFitFrame>
             ) : (
               <DevicePreview>
-                <BrandFontFace url={previewFontUrl} faces={previewFontFaces} />
                 {loginScreen}
               </DevicePreview>
             )}
@@ -1211,7 +1199,7 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
                         !hasVariableFont && previewFontFaces.length <= 1
                           ? t("brand.font.loadedOne")
                           : t("brand.font.loadedMany", {
-                              count: hasVariableFont ? 9 : previewFontFaces.length,
+                              count: headerFaceOptions.length,
                             })
                       }
                     />
@@ -1395,7 +1383,6 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
       />
       <LoginPreviewDialog
         open={loginPreviewOpen}
-        fontFaces={previewFontFaces}
         onOpenChange={setLoginPreviewOpen}
         preview={{
           lojaId: settings.barbershop_id,
@@ -1408,6 +1395,7 @@ export function BrandIdentityEditor<S extends ShopAppearanceSettings>({
           accentColor: draft.accent_color,
           fontFamily: draft.font_family,
           customFontUrl: previewFontUrl,
+          fontFaces: previewFontFaces,
           headerFontWeight: draft.header_font_weight,
           headerFontStyle: draft.header_font_style,
           cornerStyle: draft.corner_style,

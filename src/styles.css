@@ -2960,6 +2960,11 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
 }
 
 /* Prévia realista da página de login (editor de identidade). */
+.login-screen-preview .auth-brand-name {
+  font-family: var(--brand-font, var(--font-sans));
+  font-weight: var(--brand-header-font-weight, 700);
+  font-style: var(--brand-header-font-style, normal);
+}
 .login-screen-preview-framed {
   position: relative;
   width: 100%;

@@ -847,6 +847,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
             accentColor: loginTourSettings.accent_color || DEFAULT_ACCENT_COLOR,
             fontFamily: loginTourSettings.font_family || DEFAULT_FONT_FAMILY,
             customFontUrl: loginTourSettings.custom_font_url,
+            fontFaces: loginTourSettings.custom_font_faces,
             headerFontWeight: normalizeHeaderFontWeight(loginTourSettings.header_font_weight),
             headerFontStyle:
               normalizeHeaderFontStyle(loginTourSettings.header_font_style) ||

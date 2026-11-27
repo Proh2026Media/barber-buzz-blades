@@ -24,6 +24,7 @@ export type LoginScreenPreviewProps = {
   accentColor: string;
   fontFamily: string;
   customFontUrl?: string | null;
+  fontFaces?: unknown;
   headerFontWeight: number;
   headerFontStyle: string;
   cornerStyle: BrandCornerStyle;
@@ -47,6 +48,7 @@ export function LoginScreenPreview({
   accentColor,
   fontFamily,
   customFontUrl,
+  fontFaces,
   headerFontWeight,
   headerFontStyle,
   cornerStyle,
@@ -77,7 +79,7 @@ export function LoginScreenPreview({
         className={`${framed ? "" : "auth-entry-host "}auth-workspace auth-layout-${layout} ${brandCornerClass(cornerStyle)}`}
         style={style}
       >
-        <BrandFontFace url={customFontUrl} />
+        <BrandFontFace url={customFontUrl} faces={fontFaces} />
         <AuthFrame>
           <div className="auth-photo-layer">
             <img src={photo} alt="" />

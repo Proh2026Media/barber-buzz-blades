@@ -1030,6 +1030,7 @@ html[data-paleta="neutra"] .acesso-aurset .acesso-forma-pilula {
   .acesso-frase-loja {
     font-family: var(--brand-font, var(--font-sans));
     font-weight: var(--brand-header-font-weight, 700);
+    font-style: var(--brand-header-font-style, normal);
     font-size: 0.9375rem;
     overflow-wrap: anywhere;
   }

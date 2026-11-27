@@ -143,6 +143,34 @@ export function normalizeFontFaces(value: unknown): BrandFontFaceRecord[] {
   });
 }
 
+/** Face principal estável da família, inclusive quando só há peso 400 em itálico. */
+export function primaryFontFace<T extends Pick<BrandFontFaceRecord, "weight" | "style">>(
+  faces: readonly T[],
+): T | undefined {
+  return [...faces].sort(
+    (a, b) =>
+      Number(a.style === "italic") - Number(b.style === "italic") ||
+      Math.abs(a.weight - 400) - Math.abs(b.weight - 400) ||
+      a.weight - b.weight,
+  )[0];
+}
+
+export function fontStyleOptions(
+  faces: Pick<BrandFontFaceRecord, "file_name" | "weight" | "style">[],
+) {
+  const options = new Map<string, Pick<BrandFontFaceRecord, "weight" | "style">>();
+  for (const face of faces) {
+    const weights = inferFontFile({ name: face.file_name }).variable
+      ? [100, 200, 300, 400, 500, 600, 700, 800, 900]
+      : [face.weight];
+    for (const weight of weights)
+      options.set(`${weight}-${face.style}`, { weight, style: face.style });
+  }
+  return [...options.values()].sort(
+    (a, b) => a.weight - b.weight || Number(a.style === "italic") - Number(b.style === "italic"),
+  );
+}
+
 export function fontFaceLabel(face: Pick<BrandFontFaceRecord, "weight" | "style">) {
   const weights: Record<number, string> = {
     100: "Thin",

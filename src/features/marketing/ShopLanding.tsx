@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { brandCornerClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
+import { PublicBrandFontFace } from "@/features/shop/PublicBrandFontFace";
 import { useAvailabilitySignal } from "@/lib/shop/availability-signal";
 import {
   BookLink,
@@ -233,6 +234,7 @@ export function ShopLandingView({
   data,
   preview = false,
   viewportPreview = false,
+  previewFontFaces,
   freshness,
   topBar,
 }: {
@@ -240,6 +242,7 @@ export function ShopLandingView({
   preview?: boolean;
   /** A moldura do editor tem viewport próprio para as media queries. */
   viewportPreview?: boolean;
+  previewFontFaces?: unknown;
   freshness?: LandingFreshness;
   topBar?: ReactNode;
 }) {
@@ -424,7 +427,11 @@ export function ShopLandingView({
       data-tema-loja={(style as Record<string, string>)["--brand-esquema"]}
       style={style}
     >
-      <BrandFontFace url={shop.custom_font_url} />
+      {preview ? (
+        <BrandFontFace url={shop.custom_font_url} faces={previewFontFaces} />
+      ) : (
+        <PublicBrandFontFace shopId={shop.id} url={shop.custom_font_url} />
+      )}
       <header className={cn("shop-hero", shop.hero_image_url && "shop-hero-with-photo")}>
         {/* Formas chapadas na cor da loja: quarto de círculo (com a foto da capa, se houver) e anel. */}
         <span className="shop-hero-quarter" aria-hidden>

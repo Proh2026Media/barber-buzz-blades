@@ -808,7 +808,7 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
           </p>
           {viewportPreview && previewData ? (
             <DevicePreview>
-              <ShopLandingView data={previewData} preview viewportPreview />
+              <ShopLandingView data={previewData} previewFontFaces={settings.custom_font_faces} preview viewportPreview />
             </DevicePreview>
           ) : (
             <div
@@ -816,7 +816,7 @@ export function LandingEditor<S extends ShopAppearanceSettings>({
               className="relative max-h-[70dvh] overflow-y-auto rounded-2xl border border-border shadow-sm tablet:max-h-[calc(100dvh-14rem)]"
             >
               {previewData ? (
-                <ShopLandingView data={previewData} preview />
+                <ShopLandingView data={previewData} previewFontFaces={settings.custom_font_faces} preview />
               ) : previewFailed ? (
                 <EmptyState
                   variant="plain"

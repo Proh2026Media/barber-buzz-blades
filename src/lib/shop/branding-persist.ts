@@ -9,6 +9,7 @@ import {
 } from "./branding";
 import {
   normalizeFontFaces,
+  primaryFontFace,
   type BrandFontFaceRecord,
   type PendingBrandFontFace,
 } from "./font-files.ts";
@@ -182,7 +183,7 @@ export async function persistBrandIdentity<S extends ShopAppearanceSettings>(
         })),
       );
       values.custom_font_faces = records;
-      values.custom_font_url = records.find((face) => face.weight === 400)?.url ?? records[0]!.url;
+      values.custom_font_url = primaryFontFace(records)!.url;
       values.custom_font_name = draft.custom_font_name || "Fonte personalizada";
     } else if (settings.custom_font_url && !values.custom_font_url) {
       values.custom_font_faces = [];
@@ -215,8 +216,7 @@ export async function persistBrandIdentity<S extends ShopAppearanceSettings>(
     if (fontFaces?.length) {
       newFontRecords = await uploadShopFontFaces(shopId, fontFaces);
       values.custom_font_faces = newFontRecords;
-      values.custom_font_url =
-        newFontRecords.find((face) => face.weight === 400)?.url ?? newFontRecords[0]!.url;
+      values.custom_font_url = primaryFontFace(newFontRecords)!.url;
       values.custom_font_name = draft.custom_font_name || "Fonte personalizada";
       removeOldFonts = true;
     } else if (settings.custom_font_url && !values.custom_font_url) {
