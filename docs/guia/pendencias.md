@@ -1,5 +1,7 @@
 # Pendências — lista única e priorizada
 
+Feito em 27/11/2026. Corrigido o vão sob o rodapé no PWA instalado em iPhone.
+
 Feito em 27/11/2026. Aplicada à navegação a regra de cantos internos do kit Aurset. A área da barbearia acompanha o cliente nos três formatos de canto.
 
 **16/11/2026 — login WhatsApp homologado no piloto:** titular recebeu o código no grupo e confirmou que entrou. Corte16:08BRT: pedido16:06:55, rota correta para o mesmo grupo, envio accepted16:07:00, desafio consumed e last_sign_in_at16:07:12. Telefone confirmado, grupo/ciclo ativos, pausa=false e isolamento=true no par Loja Teste/Alyson Gmail. O teste começou após recência expirar naturalmente, sem nova conferência administrativa. Não afirmar criação de linha em auth.sessions: não há registro nessa tabela; evidência é consumo do código, autenticação atualizada e acesso confirmado pelo titular. Não ampliar piloto/distribuição/timers automaticamente nem pedir novo cadastro/grupo/confirmação.

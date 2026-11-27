@@ -145,8 +145,6 @@
     inset: 0;
     height: auto;
   }
-
-
 }
 
 /* O iOS suaviza também a faixa logo abaixo da área de status. A superfície
@@ -223,6 +221,36 @@
   }
   @media (prefers-reduced-transparency: reduce) {
     .arena-workspace[data-conteudo-sob-menu] > header::before { inset: 0; background: var(--card); }
+  }
+}
+
+/* No iPhone instalado, a janela de layout pode descontar a área de status
+   mesmo quando o painel começa no topo da tela. Compensar no painel mantém
+   a rolagem e o menu no mesmo sistema de coordenadas. */
+@media (display-mode: standalone) and (max-width: 767.98px) {
+  :root[data-sistema="apple"] .arena-workspace {
+    --app-floating-bottom: max(10px, calc(var(--app-safe-bottom) - 24px));
+  }
+  :root[data-sistema="apple"] .arena-workspace > .app-mobile-nav {
+    bottom: var(--app-floating-bottom) !important;
+  }
+}
+@media (display-mode: standalone) and (orientation: portrait) and (max-width: 767.98px) {
+  :root[data-sistema="apple"]:not([data-keyboard-open="true"]):has(.arena-workspace:not(.demo-content *)),
+  :root[data-sistema="apple"]:not([data-keyboard-open="true"]) body:has(.arena-workspace:not(.demo-content *)) {
+    height: 100lvh;
+    min-height: 100lvh;
+    overflow: hidden;
+  }
+  :root[data-sistema="apple"]:not([data-keyboard-open="true"])
+    .arena-workspace:not(.demo-content *) {
+    position: relative;
+    inset: auto;
+    height: 100lvh;
+  }
+  :root[data-sistema="apple"]:not([data-keyboard-open="true"])
+    .arena-workspace:not(.demo-content *) > .app-mobile-nav {
+    position: absolute;
   }
 }
 
