@@ -1953,7 +1953,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
 
   return (
     <WorkspaceFrame
-      className={`arena-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)} ${settings?.floating_chrome ? "brand-chrome-floating" : ""}`}
+      className={`arena-workspace shop-workspace min-h-screen bg-background text-foreground ${brandFontScopeClass(settings?.font_scope)} ${brandCornerClass(settings?.corner_style)} ${settings?.floating_chrome ? "brand-chrome-floating" : ""}`}
       style={brandStyle ? (brandStyle as CSSProperties) : undefined}
     >
       <BrandRootVariables vars={brandStyle} />
@@ -2034,7 +2034,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
                 {/* Selo do papel tocável ("Dono · 50%" + modo da sociedade): abre "Seu acesso".
                     shop_admin antigo: dono legítimo da loja que abriu (antes da equipe existir). */}
                 {managedShop ? (
-                  <a className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 text-sm" href="/platform?aba=barbearias">
+                  <a className="inline-flex min-h-11 items-center gap-1 rounded-[var(--button-radius)] px-2 text-sm" href="/platform?aba=barbearias">
                     <ArrowLeft className="size-4" aria-hidden /> {t(PLATFORM_META.label)}
                   </a>
                 ) : <RoleAccessButton
@@ -2906,7 +2906,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
             aria-hidden
             className="app-mobile-nav-indicator"
             style={{
-              width: `calc((100% - 0.9rem - ${(shopNavItems.length - 1) * 0.3}rem) / ${shopNavItems.length})`,
+              width: `calc((100% - 2 * var(--nav-padding) - ${(shopNavItems.length - 1) * 0.3}rem) / ${shopNavItems.length})`,
               transform: `translateX(calc(${Math.max(0, activeNavIndex)} * (100% + 0.3rem)))`,
               opacity: activeNavIndex >= 0 ? 1 : 0,
             }}

@@ -360,7 +360,7 @@ function FullCard({
         ? t("agenda.busy.complete")
         : t("agenda.action.complete")}
       {loyalty && !saving && (
-        <span className="inline-flex shrink-0 items-center rounded-full bg-white/15 px-1.5 py-0.5 text-[11px] font-bold leading-none">
+        <span className="inline-flex shrink-0 items-center rounded-[var(--tag-radius)] bg-white/15 px-1.5 py-0.5 text-[11px] font-bold leading-none">
           <span aria-hidden>{t("agenda.action.points")}</span>
           <span className="sr-only">{t("agenda.early.points")}</span>
         </span>

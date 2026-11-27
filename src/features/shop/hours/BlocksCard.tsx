@@ -292,7 +292,7 @@ export function BlocksCard({
                     {labels.dayNumber(dayKey)}
                   </span>
                   {count > 0 ? (
-                    <span className="tone-danger inline-flex h-4 items-center gap-0.5 rounded-full bg-[color:var(--tone-bg)] px-1.5 text-[11px] text-[color:var(--tone-ink)]">
+                    <span className="tone-danger inline-flex h-4 items-center gap-0.5 rounded-[var(--tag-radius)] bg-[color:var(--tone-bg)] px-1.5 text-[11px] text-[color:var(--tone-ink)]">
                       <Ban className="size-3" aria-hidden />
                       {count}
                     </span>

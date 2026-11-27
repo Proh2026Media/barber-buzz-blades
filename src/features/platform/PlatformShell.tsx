@@ -703,7 +703,7 @@ export function PlatformShell({ profile, headerActions, demoMode = false }: Plat
           aria-hidden
           className="app-mobile-nav-indicator"
           style={{
-            width: `calc((100% - 0.9rem - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
+            width: `calc((100% - 2 * var(--nav-padding) - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
             transform: `translateX(calc(${Math.max(0, activeNavIndex)} * (100% + 0.3rem)))`,
             opacity: activeNavIndex >= 0 ? 1 : 0,
           }}

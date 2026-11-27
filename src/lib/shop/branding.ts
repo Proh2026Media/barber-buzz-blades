@@ -101,6 +101,12 @@ export const BRAND_LOGIN_LAYOUT_OPTIONS: {
   },
 ];
 
+/**
+ * As três opções de cantos. Os raios aqui só desenham a miniatura de cada opção no editor de
+ * marca: quem pinta a tela são os blocos `.brand-corners-*` de src/styles.css (fonte única, com
+ * os sete papéis de canto). Ao mudar um número, mude nos dois lugares; o teste confere.
+ * Escala da holding: 0, 6, 10, 14, 22 px e cápsula. Manual: Aurset/brandkit/cantos.html.
+ */
 export const BRAND_CORNER_OPTIONS: {
   value: BrandCornerStyle;
   labelKey: MessageKey;
@@ -121,16 +127,16 @@ export const BRAND_CORNER_OPTIONS: {
     value: "soft",
     labelKey: "brand.corner.soft",
     hintKey: "brand.corner.softHint",
-    controlRadius: "0.9rem",
-    panelRadius: "1.35rem",
-    buttonRadius: "0.9rem",
+    controlRadius: "0.875rem",
+    panelRadius: "1.375rem",
+    buttonRadius: "0.875rem",
   },
   {
     value: "round",
     labelKey: "brand.corner.round",
     hintKey: "brand.corner.roundHint",
-    controlRadius: "1.2rem",
-    panelRadius: "2rem",
+    controlRadius: "1.375rem",
+    panelRadius: "1.375rem",
     buttonRadius: "999px",
   },
 ];
@@ -486,7 +492,8 @@ export function brandVariables(
   customFontUrl?: string | null,
   headerFontWeight?: number | null,
   headerFontStyle?: string | null,
-  cornerStyle?: string | null,
+  // Mantido para não mudar quem chama; os cantos vêm da classe `brandCornerClass()`.
+  _cornerStyle?: string | null,
 ) {
   const { primary: normalizedPrimary, accent: normalizedAccent } = resolveBrandColors(
     primary,
@@ -507,9 +514,6 @@ export function brandVariables(
   const accentReadablePage = darkScheme
     ? accentReadableDark
     : readableBrandColor(normalizedAccent, leque.claro);
-  const corners = BRAND_CORNER_OPTIONS.find(
-    (option) => option.value === normalizeCornerStyle(cornerStyle),
-  )!;
   const customFamily = customBrandFontFamily(customFontUrl);
   const fontStack = customFamily
     ? `"${customFamily}", ${brandFontStack(fontFamily)}`
@@ -548,10 +552,8 @@ export function brandVariables(
     "--brand-font": fontStack,
     "--brand-header-font-weight": String(normalizeHeaderFontWeight(headerFontWeight)),
     "--brand-header-font-style": normalizeHeaderFontStyle(headerFontStyle),
-    "--radius": corners.controlRadius,
-    "--control-radius": corners.controlRadius,
-    "--panel-radius": corners.panelRadius,
-    "--button-radius": corners.buttonRadius,
+    // Os raios não saem mais daqui: o estilo em linha vencia a classe `brand-corners-*` e a
+    // página ficava com um raio e as janelas com outro. A classe é a fonte única.
   };
 }
 

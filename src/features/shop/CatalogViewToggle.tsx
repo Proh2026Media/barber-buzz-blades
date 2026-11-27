@@ -15,7 +15,7 @@ export function CatalogViewToggle({
   const { t } = useI18n();
   return (
     <div
-      className={`flex shrink-0 gap-1 rounded-xl border border-border bg-card p-1 ${className}`}
+      className={`catalog-view-toggle flex shrink-0 gap-1 rounded-xl border border-border bg-card p-1 ${className}`}
       role="group"
       aria-label={t("brand.catalog.viewAria")}
     >

@@ -512,7 +512,7 @@ function AccountClientModal({
                 <EmailsDasReservas shopId={shopId} conta={customerId} />
                 {profile.contact_phone && (
                   <a href={whatsappLink(profile.contact_phone, "")} target="_blank" rel="noreferrer"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold">
+                    className="inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border px-4 text-sm font-semibold">
                     <MessageCircle className="size-4" aria-hidden />
                     {t("client.walkIn.openChat")}
                   </a>

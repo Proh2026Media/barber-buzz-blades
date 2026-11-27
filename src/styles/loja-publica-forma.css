@@ -1,54 +1,15 @@
-/* Kit Aurset v0.4. A prévia no editor usa a mesma página e a mesma opção de cantos.
-   Os menus de idioma abrem fora da página, dentro de um portal do Radix. */
-:is(.shop-landing, .customer-workspace), body:has(.shop-landing.brand-page, .customer-workspace) {
-  --dur-ui-micro: 140ms;
-  --dur-ui-overlay: 300ms;
-  --ease-entrada: cubic-bezier(.22, 1, .36, 1);
-  --canto-forma: 999px;
-  --canto-detalhe: 6px;
-  --canto-controle: 14px;
-  --canto-cartao: 22px;
-  --canto-janela: 22px;
-  --canto-botao: 14px;
-  --canto-selo: 999px;
-}
-:is(.shop-landing, .customer-workspace).brand-corners-square, body:has(:is(.shop-landing.brand-page, .customer-workspace).brand-corners-square) {
-  --canto-detalhe: 0px;
-  --canto-controle: 0px;
-  --canto-cartao: 0px;
-  --canto-janela: 0px;
-  --canto-botao: 0px;
-  --canto-selo: 0px;
-}
-:is(.shop-landing, .customer-workspace).brand-corners-round, body:has(:is(.shop-landing.brand-page, .customer-workspace).brand-corners-round) {
-  --canto-detalhe: 10px;
-  --canto-controle: 22px;
-  --canto-botao: 999px;
-}
-:is(.shop-landing, .customer-workspace) > * {
-  --radius: var(--canto-controle);
-  --control-radius: var(--canto-controle);
-  --panel-radius: var(--canto-cartao);
-  --button-radius: var(--canto-botao);
-}
-body:has(.shop-landing.brand-page, .customer-workspace) [role="menu"] {
-  border-radius: var(--canto-janela);
-}
-body:has(.shop-landing.brand-page, .customer-workspace) [role="menuitem"] {
-  border-radius: var(--canto-controle);
-}
-.shop-landing .shop-badge { border-radius: var(--canto-selo); }
+.shop-landing .shop-badge { border-radius: var(--tag-radius); }
 .shop-landing .shop-inner-card {
-  border-radius: max(var(--canto-detalhe), calc(var(--panel-radius) - 1rem));
+  border-radius: max(var(--detail-radius), calc(var(--panel-radius) - 1rem));
 }
 .shop-landing .mb-live-dot { animation: none; }
-.shop-landing .rounded-full { border-radius: var(--canto-forma); }
+.shop-landing .rounded-full { border-radius: var(--shape-radius); }
 
 /* O cabeçalho rola com a página. O único Véu é a barra que surge quando a ação
    principal já saiu da tela. Sua ação usa um par de cores opacas do próprio tema. */
 .shop-landing .shop-booking-bar {
   --bar-inset: 8px;
-  --barra-canto: var(--canto-cartao);
+  --barra-canto: var(--panel-radius);
   --bar-fill: color-mix(in srgb, var(--card) 82%, transparent);
   --bar-filter: blur(14px) saturate(130%);
   --bar-line: color-mix(in srgb, var(--foreground) 12%, transparent);
@@ -98,6 +59,7 @@ body:has(.shop-landing.brand-page, .customer-workspace) [role="menuitem"] {
   }
 }
 .shop-landing .shop-booking-bar .shop-cta {
+  border-radius: max(var(--detail-radius), calc(var(--barra-canto) - 9px));
   background: var(--card-foreground);
   color: var(--card);
 }
@@ -123,24 +85,20 @@ body:has(.shop-landing.brand-page, .customer-workspace) [role="menuitem"] {
   transform: none;
 }
 
-.customer-workspace .selo-estado { border-radius: var(--canto-selo); }
-body:has(.customer-workspace) :is([role="dialog"], [role="alertdialog"]) {
-  --control-radius: var(--canto-controle);
-  --button-radius: var(--canto-botao);
-  --panel-radius: var(--canto-cartao);
-  border-radius: var(--canto-janela);
-}
+.arena-workspace .selo-estado { border-radius: var(--tag-radius); }
 @media (max-width: 767.98px) {
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    [data-sistema="apple"] .customer-workspace > .app-mobile-nav {
+    [data-sistema="apple"] .arena-workspace > .app-mobile-nav {
       background: color-mix(in srgb, var(--card) 76%, transparent) !important;
       -webkit-backdrop-filter: blur(22px) saturate(180%);
       backdrop-filter: blur(22px) saturate(180%);
     }
   }
-  [data-sistema="android"] .customer-workspace { --app-floating-bottom: 0px; }
-  [data-sistema="android"] .customer-workspace > .app-mobile-nav {
+  [data-sistema="android"] .arena-workspace { --app-floating-bottom: 0px; }
+  [data-sistema="android"] .arena-workspace > .app-mobile-nav {
     inset-inline: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     bottom: 0 !important;
     max-width: none;
     border-radius: 0 !important;
@@ -150,22 +108,45 @@ body:has(.customer-workspace) :is([role="dialog"], [role="alertdialog"]) {
     background: var(--card) !important;
     box-shadow: none !important;
   }
-  [data-sistema="android"] .customer-workspace .app-mobile-nav-indicator { visibility: hidden; }
-  [data-sistema="android"] .customer-workspace .app-mobile-nav button[aria-pressed="true"] :is(span, svg) { color: var(--card-foreground) !important; }
-  [data-sistema="android"] .customer-workspace .app-mobile-nav button[aria-pressed="true"] svg {
+  [data-sistema="android"] .arena-workspace .app-mobile-nav-indicator { visibility: hidden; }
+  [data-sistema="android"] .arena-workspace .app-mobile-nav button[aria-pressed="true"] :is(span, svg) { color: var(--card-foreground) !important; }
+  [data-sistema="android"] .arena-workspace .app-mobile-nav button[aria-pressed="true"] svg {
     box-sizing: content-box;
     margin-block: -3px calc(.375rem - 3px);
     padding: 3px 12px;
-    border-radius: var(--canto-selo);
+    border-radius: var(--tag-radius);
     background: var(--primary) !important;
     color: var(--primary-foreground) !important;
   }
-  :root:is([data-desempenho="baixo"], [data-transparencia="nao"]) .customer-workspace > .app-mobile-nav {
+  :root:is([data-desempenho="baixo"], [data-transparencia="nao"]) .arena-workspace > .app-mobile-nav {
     background: var(--card) !important; backdrop-filter: none; -webkit-backdrop-filter: none;
   }
   @media (prefers-reduced-transparency: reduce) {
-    :root[data-sistema] .customer-workspace > .app-mobile-nav {
+    :root[data-sistema] .arena-workspace > .app-mobile-nav {
       background: var(--card) !important; backdrop-filter: none; -webkit-backdrop-filter: none;
     }
   }
+}
+
+/* A seleção acompanha o contorno do suporte e desconta o recuo até a borda externa. */
+.agenda-scope,
+.app-tab-list,
+.catalog-view-toggle:not(.booking-view-toggle) {
+  --recuo-selecao: .25rem;
+  --borda-selecao: 0px;
+  border-radius: var(--control-radius);
+  padding: var(--recuo-selecao);
+}
+.catalog-view-toggle:not(.booking-view-toggle) { --borda-selecao: 1px; }
+:is(.agenda-scope, .app-tab-list, .catalog-view-toggle:not(.booking-view-toggle)) > button {
+  --button-radius: max(var(--detail-radius), calc(var(--control-radius) - var(--recuo-selecao) - var(--borda-selecao)));
+}
+.arena-workspace .catalog-view-toggle:not(.booking-view-toggle) > button.rounded-lg {
+  border-radius: var(--button-radius) !important;
+}
+[data-radix-popper-content-wrapper] [role="menu"] {
+  border-radius: var(--window-radius);
+}
+[data-radix-popper-content-wrapper] [role="menu"] :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]) {
+  border-radius: max(var(--detail-radius), calc(var(--window-radius) - .25rem - 1px));
 }

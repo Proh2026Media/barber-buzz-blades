@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   DEFAULT_ACCENT_COLOR,
@@ -7,6 +8,7 @@ import {
   LEGACY_DEFAULT_ACCENT_COLOR,
   LEGACY_DEFAULT_PRIMARY_COLOR,
   isMotherFloor,
+  BRAND_CORNER_OPTIONS,
   BRAND_PALETTE,
   brandDraftFromSettings,
   brandDraftToSettings,
@@ -186,6 +188,39 @@ test("brand colors are automatically reinforced when they camouflage on reading 
   assert.ok(contrastRatio(adjusted, SHOP_LIGHT_READING_SURFACE) >= 4.5);
 });
 
+test("cantos: a folha de estilo é a fonte única e a miniatura do editor repete os mesmos raios", () => {
+  const css = readFileSync(new URL("../../styles.css", import.meta.url), "utf8");
+  const escala = new Set(["0rem", "0.375rem", "0.625rem", "0.875rem", "1.375rem", "999px"]);
+  for (const option of BRAND_CORNER_OPTIONS) {
+    const bloco =
+      css.match(new RegExp(`\\n\\.brand-corners-${option.value} \\{([^}]+)\\}`))?.[1] ?? "";
+    const valor = (nome: string) => bloco.match(new RegExp(`--${nome}: ([^;]+);`))?.[1];
+    assert.equal(valor("control-radius"), option.controlRadius, `${option.value}: campo`);
+    assert.equal(valor("panel-radius"), option.panelRadius, `${option.value}: cartão`);
+    assert.equal(valor("button-radius"), option.buttonRadius, `${option.value}: botão`);
+    for (const nome of [
+      "radius",
+      "detail-radius",
+      "control-radius",
+      "panel-radius",
+      "window-radius",
+      "button-radius",
+      "tag-radius",
+    ]) {
+      assert.ok(
+        escala.has(valor(nome) ?? ""),
+        `${option.value}: --${nome} fora da escala (${valor(nome)})`,
+      );
+    }
+  }
+  // O estilo em linha não leva raio: venceria a classe e deixaria janela diferente da página.
+  const vars = brandVariables("#262626", "#FFFFFF", "inter", null, 700, "normal", "round");
+  assert.equal(
+    Object.keys(vars).some((nome) => nome.includes("radius")),
+    false,
+  );
+});
+
 test("corner styles normalize to the three supported visual languages", () => {
   assert.equal(normalizeCornerStyle("square"), "square");
   assert.equal(normalizeCornerStyle("round"), "round");
@@ -232,10 +267,6 @@ test("workspace variables keep brand typography separate from the system font", 
     "--brand-font": '"Manrope Variable", "Manrope", system-ui, sans-serif',
     "--brand-header-font-weight": "700",
     "--brand-header-font-style": "normal",
-    "--radius": "0.9rem",
-    "--control-radius": "0.9rem",
-    "--panel-radius": "1.35rem",
-    "--button-radius": "0.9rem",
   });
   const url = "https://example.com/font.woff2";
   assert.match(String(brandVariables(null, null, "inter", url)["--brand-font"]), /BarbaBrand_/);

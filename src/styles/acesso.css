@@ -570,7 +570,7 @@ body .acesso .acesso-entrada input[aria-invalid="true"][aria-invalid]:focus {
   gap: 0.375rem;
   min-height: 2.75rem;
   padding: 0 0.375rem;
-  border-radius: 10px;
+  border-radius: var(--ac-raio-campo);
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--ac-texto);
@@ -728,7 +728,7 @@ html.dark[data-paleta="neutra"] .acesso-aurset .acesso-google {
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  border-radius: 4px;
+  border-radius: var(--detail-radius);
 }
 .acesso-rodape {
   display: flex;
@@ -1358,7 +1358,7 @@ html[data-paleta="neutra"] .acesso-aurset .acesso-forma-pilula {
 .acesso-cadastro .platform-register-back {
   color: var(--ac-sobre-chao);
   font-size: 0.9375rem;
-  border-radius: 10px;
+  border-radius: var(--ac-raio-campo);
   padding: 0 0.375rem;
   background: color-mix(in oklab, var(--ac-chao) 80%, transparent);
 }
@@ -1399,7 +1399,7 @@ html[data-paleta="neutra"] .acesso-aurset .acesso-forma-pilula {
   display: grid;
   gap: 0.375rem;
   padding: 0.625rem 0.625rem 0.875rem;
-  border-radius: 22px;
+  border-radius: var(--ac-raio-cartao);
   background: var(--ac-cartao);
   color: var(--ac-texto);
   box-shadow: var(--ac-sombra);
@@ -1410,14 +1410,14 @@ html[data-paleta="neutra"] .acesso-aurset .acesso-forma-pilula {
   position: relative;
   height: 5.5rem;
   margin-bottom: 1rem;
-  border-radius: 14px;
+  border-radius: max(var(--detail-radius), calc(var(--ac-raio-cartao) - .625rem));
   background: var(--ac-chao);
 }
 .cad-previa-capa span {
   position: absolute;
   inset: 0 0 0 auto;
   width: 58%;
-  border-radius: 0 14px 14px 100%;
+  border-radius: 0 max(var(--detail-radius), calc(var(--ac-raio-cartao) - .625rem)) max(var(--detail-radius), calc(var(--ac-raio-cartao) - .625rem)) 100%;
   background: var(--ac-forma);
 }
 .cad-previa-capa em {

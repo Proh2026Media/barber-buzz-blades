@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+A navegação do cliente e da gestão usa o raio do painel menos o recuo real do item. A gestão passou a usar os mesmos cantos, áreas seguras e acabamento por aparelho da área do cliente. A configuração visual dos estabelecimentos permanece no cadastro existente.
+
 **27/11/2026 — histórico da Externa.** A conciliação exige o mesmo par de provas em cada reserva da ficha. O e-mail ausente não é emprestado de outra linha; uma preposição sozinha não comprova sobrenome. Contatos de contas suspensas continuam contando para detectar ambiguidades. Suíte local com reversão aprovada e primeiro ciclo em produção concluído, com uma ficha para revisão e zero novos vínculos. [Critérios e sincronização](../scripts/externa/README.md).
 
 ## 26/11/2026 — Cruzamento do histórico da Externa

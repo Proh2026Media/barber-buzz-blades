@@ -2702,13 +2702,9 @@ function ArenaApp({
       const appearing = navLastActive.current < 0 && activeNavIndex >= 0;
       navLastActive.current = activeNavIndex;
       if (!pill || !button) return;
-      // Folga da pílula em volta do rótulo; nos cantos arredondados, mais, porque a ponta curva
-      // comeria as bordas do rótulo mais largo (cabe no vão entre as colunas e no recuo da barra).
-      const radius = parseFloat(getComputedStyle(pill).borderTopLeftRadius) || 0;
-      const extra = radius >= 20 ? 4 : 3;
       const next = {
-        x: button.offsetLeft - pill.offsetLeft - extra,
-        width: button.offsetWidth + 2 * extra,
+        x: button.offsetLeft - pill.offsetLeft,
+        width: button.offsetWidth,
       };
       if (appearing) setNavPillAnimated(false);
       setNavPill((prev) => (prev && prev.x === next.x && prev.width === next.width ? prev : next));
@@ -4028,7 +4024,7 @@ function ArenaApp({
                   transition: navPillAnimated ? undefined : "none",
                 }
               : {
-                  width: `calc((100% - 0.9rem - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
+                  width: `calc((100% - 2 * var(--nav-padding) - ${(navItems.length - 1) * 0.3}rem) / ${navItems.length})`,
                   transform: `translateX(calc(${Math.max(0, activeNavIndex)} * (100% + 0.3rem)))`,
                   opacity: activeNavIndex >= 0 ? 1 : 0,
                   transition: "none",

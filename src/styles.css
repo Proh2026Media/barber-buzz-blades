@@ -20,8 +20,11 @@
      compacto dentro da faixa do tablet. */
   --breakpoint-tablet: 48rem;
   --breakpoint-pc: 80rem;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  /* Peças miúdas (`rounded-sm`, `rounded-md`): presas à escala de cantos. A conta antiga
+     (--radius menos 2 ou 4 px) dava 18 a 20 px na opção Arredondados e transformava caixa de
+     seleção e miniatura em círculo. Ver Aurset/brandkit/cantos.html. */
+  --radius-sm: var(--detail-radius);
+  --radius-md: max(var(--detail-radius), min(calc(var(--radius) - 2px), 0.625rem));
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
@@ -95,16 +98,42 @@
 :root {
   /* Identidade Aurset (fonte: Aurset/brandkit/index.html). Os nomes shadcn continuam valendo e
      apontam para os tokens Aurset; telas novas podem usar o nome próprio direto. */
-  /* Raio: um só, 10 px (--raio do kit), em controles, cartões e painéis. É o modo "soft". */
+  /* Cantos. Sete papéis, sempre na escala da holding (0, 6, 10, 14, 22 e cápsula). Aqui ficam
+     os valores da plataforma (fora de estabelecimento); cada estabelecimento troca os sete de
+     uma vez pela opção de cantos (blocos `.brand-corners-*`, mais abaixo). Nenhuma tela escreve
+     raio em número: usa o papel. Manual: Aurset/brandkit/cantos.html.
+       detail   peça miúda: caixa de seleção, miniatura, etiqueta pequena
+       control  campo, seletor, item de menu, ícone em caixa
+       panel    cartão, linha, seção
+       window   janela, folha e menu que flutuam
+       button   botão, aba, opção de escolha
+       tag      selo e etiqueta de estado
+       shape    forma com significado (ponto, trilho, pessoa, chave, rádio, contador, passo):
+                redonda em qualquer opção */
   --radius: 0.625rem;
+  --detail-radius: 0.375rem;
   --control-radius: 0.625rem;
   --panel-radius: 0.875rem;
+  --window-radius: 0.875rem;
   --button-radius: 999px;
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
-  --duration-fast: 180ms;
-  --duration-med: 320ms;
-  --duration-slow: 520ms;
+  --tag-radius: 999px;
+  --shape-radius: 999px;
+  /* Movimento: durações e curvas da holding (brand/tokens/movimento.tokens.json). Interface usa
+     micro (toque, hover), rápido (troca de estado) e overlay (janela, menu, folha); entrada,
+     saída e troca têm cada uma a sua curva. Sem efeito elástico. */
+  --dur-ui-micro: 140ms;
+  --dur-ui-rapido: 220ms;
+  --dur-ui-overlay: 300ms;
+  --dur-marca-base: 480ms;
+  --ease-entrada: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-saida: cubic-bezier(0.55, 0, 0.75, 0.2);
+  --ease-troca: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Nomes antigos do projeto: continuam valendo e apontam para os da holding. */
+  --ease-out: var(--ease-entrada);
+  --ease-soft: var(--ease-troca);
+  --duration-fast: var(--dur-ui-micro);
+  --duration-med: var(--dur-ui-overlay);
+  --duration-slow: var(--dur-marca-base);
 
   /* Cores da marca-mãe. São exclusivas da plataforma e da holding: nenhum tema de
      estabelecimento usa estes valores (src/lib/shop/themes.ts barra a gravação). */
@@ -1617,6 +1646,13 @@ body [data-sonner-toaster] [data-sonner-toast] [data-description] {
   margin-top: var(--app-chrome-inset);
   border-bottom-width: 1px;
 }
+.brand-preview .brand-preview-footer {
+  --preview-nav-padding: 7px;
+  padding: var(--preview-nav-padding);
+}
+.brand-preview .brand-preview-footer > span {
+  border-radius: max(var(--detail-radius), calc(var(--panel-radius) - var(--preview-nav-padding) - 1px));
+}
 .brand-preview.brand-chrome-floating .brand-preview-footer {
   margin-bottom: var(--app-chrome-inset);
   border-top-width: 1px;
@@ -1645,7 +1681,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   outline-offset: 2px;
 }
 [data-slot="calendar"] {
-  --radius: 0.625rem;
+  /* Dia do calendário: no máximo 10 px, e reto na opção Retos. */
+  --radius: min(var(--control-radius), 0.625rem);
 }
 /* Fundo quadriculado para pré-visualizar logos com transparência. */
 .checkerboard {
@@ -1666,7 +1703,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   border-radius: var(--control-radius);
 }
 [data-slot="calendar"] button[data-range-middle="true"] {
-  border-radius: 0.35rem;
+  border-radius: var(--detail-radius);
 }
 /* Sombra só em elementos flutuantes: cartões e botões do app ficam planos. */
 .arena-workspace .shadow-sm {
@@ -1762,7 +1799,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   align-items: center;
   gap: 0.35rem;
   padding: 0 0.7rem;
-  border-radius: max(0rem, calc(var(--button-radius) - 0.15rem));
+  border-radius: max(0rem, calc(var(--button-radius) - 0.25rem - 1px));
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
@@ -1848,16 +1885,19 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
      posicionamento e aqui só ajustamos o recuo da área de gesto inferior. */
   bottom: max(1rem, var(--app-safe-bottom, env(safe-area-inset-bottom))) !important;
   gap: 0.3rem;
-  padding: 0.45rem !important;
-  border: 1px solid var(--border-subtle) !important;
+  --nav-padding: 7px;
+  --nav-border: 1px;
+  --nav-inner-radius: max(var(--detail-radius), calc(var(--panel-radius) - var(--nav-padding) - var(--nav-border)));
+  padding: var(--nav-padding) !important;
+  border: var(--nav-border) solid var(--border-subtle) !important;
   border-radius: var(--panel-radius) !important;
   /* Barra flutuante: superfície opaca e a única sombra do sistema (--shadow-float). */
   background: var(--card) !important;
   box-shadow: var(--shadow-float) !important;
 }
-.app-mobile-nav button {
+.arena-workspace > .app-mobile-nav > button {
   min-height: 52px;
-  border-radius: var(--button-radius) !important;
+  border-radius: var(--nav-inner-radius) !important;
   transition:
     color var(--duration-med) var(--ease-out),
     transform var(--duration-fast) var(--ease-out),
@@ -1937,10 +1977,9 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
 }
 .app-mobile-nav-indicator {
   position: absolute;
-  top: 0.45rem;
-  bottom: 0.45rem;
-  left: 0.45rem;
-  border-radius: var(--button-radius);
+  inset-block: var(--nav-padding);
+  left: var(--nav-padding);
+  border-radius: var(--nav-inner-radius);
   background: var(--primary);
   /* O anel de contraste mantém a pílula visível mesmo quando a cor principal
      se aproxima do fundo do rodapé. */
@@ -1998,7 +2037,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
     max-width: none !important;
     margin: 1.25rem 0 1rem var(--app-rail-inset) !important;
     /* Recuo mínimo: sobra o máximo para o rótulo (12 letras precisam de ~78 px). */
-    padding: 0.25rem !important;
+    --nav-padding: 0.25rem;
+    padding: var(--nav-padding) !important;
     /* O `overflow-hidden` da barra é para a pílula deslizante do celular; na coluna ele cortava
        1 px do anel de foco (2 px + 3 px de folga) de cada lado. */
     overflow: visible;
@@ -2071,7 +2111,8 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   }
   .arena-workspace.brand-chrome-floating > .app-mobile-nav {
     margin: 1rem 0 1rem 1rem !important;
-    padding-inline: 0.5rem !important;
+    --nav-padding: 0.5rem;
+    padding: var(--nav-padding) !important;
     border-width: 1px !important;
     border-radius: var(--panel-radius) !important;
   }
@@ -2110,7 +2151,7 @@ body:has(.arena-workspace) :is(input, textarea, select):focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.25rem;
   padding: 0.25rem;
-  border-radius: calc(var(--button-radius) + min(var(--button-radius), 0.25rem));
+  border-radius: var(--control-radius);
   background: var(--muted);
 }
 .agenda-scope button {
@@ -2467,7 +2508,7 @@ body:has(.arena-workspace)
   :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
   :is(.rounded-2xl, .rounded-3xl),
 body:has(.arena-workspace) :is([role="dialog"], [role="alertdialog"]) {
-  border-radius: var(--panel-radius);
+  border-radius: var(--window-radius);
 }
 .arena-workspace :is(.rounded-xl, .rounded-lg),
 body:has(.arena-workspace)
@@ -2476,46 +2517,45 @@ body:has(.arena-workspace)
   border-radius: var(--control-radius);
 }
 
-/* Portalled menus, dialogs and toasts inherit the active shop's corner language. */
-body:has(:is(.arena-workspace, .brand-page).brand-corners-square)
-  :is(
-    [data-radix-popper-content-wrapper],
-    [role="dialog"],
-    [role="alertdialog"],
-    [data-sonner-toaster]
-  ),
+/* As três opções de cantos do estabelecimento. Fonte única: estes blocos (o brandVariables()
+   não escreve mais raio em linha; antes escrevia outros números e a página ficava diferente das
+   janelas). O `body` recebe os mesmos valores para que tudo o que é desenhado fora do painel
+   (janela, menu, aviso, barra flutuante) siga a opção. Prévia dentro de janela leva
+   `data-brand-preview` e não conta, senão a prévia mudaria os cantos da tela em volta. */
+body:has(:is(.arena-workspace, .brand-page):not([data-brand-preview]).brand-corners-square),
 .brand-corners-square {
+  /* Retos: nenhum raio. Só a forma com significado continua redonda. */
   --radius: 0rem;
+  --detail-radius: 0rem;
   --control-radius: 0rem;
   --panel-radius: 0rem;
+  --window-radius: 0rem;
   --button-radius: 0rem;
+  --tag-radius: 0rem;
 }
-body:has(:is(.arena-workspace, .brand-page).brand-corners-soft)
-  :is(
-    [data-radix-popper-content-wrapper],
-    [role="dialog"],
-    [role="alertdialog"],
-    [data-sonner-toaster]
-  ),
+body:has(:is(.arena-workspace, .brand-page):not([data-brand-preview]).brand-corners-soft),
 .brand-corners-soft {
-  --radius: 0.625rem;
-  --control-radius: 0.625rem;
-  --panel-radius: 0.625rem;
-  --button-radius: 0.625rem;
+  /* Semi arredondados (padrão): detalhe 6, campo e botão 14, cartão e janela 22, selo cápsula. */
+  --radius: 0.875rem;
+  --detail-radius: 0.375rem;
+  --control-radius: 0.875rem;
+  --panel-radius: 1.375rem;
+  --window-radius: 1.375rem;
+  --button-radius: 0.875rem;
+  --tag-radius: 999px;
 }
-body:has(:is(.arena-workspace, .brand-page).brand-corners-round)
-  :is(
-    [data-radix-popper-content-wrapper],
-    [role="dialog"],
-    [role="alertdialog"],
-    [data-sonner-toaster]
-  ),
+body:has(:is(.arena-workspace, .brand-page):not([data-brand-preview]).brand-corners-round),
 .brand-corners-round {
-  /* Passo grande da escala da holding (22 px) em controles e painéis; botões em pílula. */
+  /* Arredondados: detalhe 10, campo 22 (cápsula numa linha só), cartão e janela 22, botão e
+     selo em cápsula. Cartão não passa de 22: acima disso linha baixa vira cápsula e o conteúdo
+     encosta na curva. */
   --radius: 1.375rem;
+  --detail-radius: 0.625rem;
   --control-radius: 1.375rem;
   --panel-radius: 1.375rem;
+  --window-radius: 1.375rem;
   --button-radius: 999px;
+  --tag-radius: 999px;
 }
 body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   :is([data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"])
@@ -2763,7 +2803,7 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   margin-inline: auto;
   overflow: hidden;
   border: 1px solid color-mix(in oklab, var(--gold) 56%, var(--border));
-  border-radius: 1.25rem;
+  border-radius: var(--panel-radius);
   background: #171813;
   box-shadow: 0 12px 28px color-mix(in oklab, #111 18%, transparent);
   cursor: grab;
@@ -2826,7 +2866,7 @@ body:has(:is(.arena-workspace, .brand-page)[class*="brand-corners-"])
   transform: translateX(-50%);
   align-items: center;
   gap: 0.35rem;
-  border-radius: 999px;
+  border-radius: var(--tag-radius);
   background: rgba(17, 18, 15, 0.78);
   padding: 0.35rem 0.7rem;
   color: white;

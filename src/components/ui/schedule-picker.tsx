@@ -178,7 +178,7 @@ export function DatePicker({
           >
             {todayLabel && (
               <span className="inline-flex items-center gap-1.5">
-                <span className="size-3.5 rounded-[min(var(--control-radius),0.3rem)] ring-2 ring-inset ring-gold" />
+                <span className="size-3.5 rounded-[var(--detail-radius)] ring-2 ring-inset ring-gold" />
                 {todayLabel}
               </span>
             )}

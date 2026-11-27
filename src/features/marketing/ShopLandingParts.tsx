@@ -410,7 +410,7 @@ export function ServiceRow({ service, price }: { service: LandingService; price:
   const { t } = useI18n();
   return (
     <li className="public-card flex items-center gap-3 rounded-[var(--panel-radius)] border border-border p-3">
-      <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--canto-detalhe)] bg-muted text-muted-foreground">
+      <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-muted-foreground">
         {/* Sem ícone escolhido vira a tesoura padrão: iniciais ficam só para pessoas. */}
         <ServiceIcon
           icon={service.icon}

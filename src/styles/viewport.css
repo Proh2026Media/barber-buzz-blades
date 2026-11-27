@@ -140,7 +140,7 @@
 /* No app instalado a tela do cliente ocupa a janela. Só o teclado aberto
    precisa da altura menor informada por visualViewport. */
 @media (display-mode: standalone) and (max-width: 767.98px) {
-  :root:not([data-keyboard-open="true"]) .customer-workspace:not(.demo-content *) {
+  :root:not([data-keyboard-open="true"]) :is(.customer-workspace, .shop-workspace):not(.demo-content *) {
     position: fixed;
     inset: 0;
     height: auto;
@@ -153,16 +153,16 @@
    continua até a borda; o conteúdo começa depois dessa faixa no app instalado. */
 @supports (-webkit-touch-callout: none) {
   @media (display-mode: standalone) and (orientation: portrait) and (max-width: 767.98px) {
-    .customer-workspace {
+    :is(.customer-workspace, .shop-workspace) {
       --recuo-status-ios: min(24px, var(--app-safe-top));
     }
-    .customer-workspace:not(.brand-chrome-floating) > header {
+    :is(.customer-workspace, .shop-workspace):not(.brand-chrome-floating) > header {
       padding-top: calc(var(--app-safe-top) + var(--recuo-status-ios) + 0.75rem);
     }
-    .customer-workspace:not(.brand-chrome-floating) .brand-header-logo-wrap {
+    :is(.customer-workspace, .shop-workspace):not(.brand-chrome-floating) .brand-header-logo-wrap {
       top: calc(var(--app-safe-top) + min(30px, var(--app-safe-top)));
     }
-    .customer-workspace.brand-chrome-floating > header {
+    :is(.customer-workspace, .shop-workspace).brand-chrome-floating > header {
       margin-top: calc(var(--app-safe-top) + var(--recuo-status-ios) + 0.5rem);
     }
   }
@@ -180,13 +180,13 @@
 /* O conteúdo começa abaixo dos controles, mas pode rolar até a borda da tela.
    A altura inclui o recorte do aparelho e a margem do cabeçalho flutuante. */
 @media (max-width: 767.98px) {
-  .customer-workspace {
+  :is(.customer-workspace, .shop-workspace) {
     position: relative;
     --app-floating-bottom: max(10px, var(--app-safe-bottom));
     --recuo-lateral-menu: max(10px, var(--app-safe-left), var(--app-safe-right));
   }
-  .customer-workspace > .app-mobile-nav,
-  .customer-workspace.brand-chrome-floating > .app-mobile-nav {
+  :is(.customer-workspace, .shop-workspace) > .app-mobile-nav,
+  :is(.customer-workspace, .shop-workspace).brand-chrome-floating > .app-mobile-nav {
     position: absolute;
     inset-inline: var(--recuo-lateral-menu);
     bottom: var(--app-floating-bottom) !important;
@@ -237,7 +237,7 @@
   color: #343434;
 }
 .dark .abertura-contexto { background: #191919; color: #ededed; }
-.abertura-contexto button { border: 1px solid currentColor; border-radius: 2rem; padding: .65rem 1.25rem; }
+.abertura-contexto button { border: 1px solid currentColor; border-radius: var(--button-radius); padding: .65rem 1.25rem; }
 .entrada-espera { display: none; }
 [data-resolver-entrada] .entrada-pendente > .entrada-publica { display: none; }
 [data-resolver-entrada] .entrada-pendente > .entrada-espera { display: block; }
