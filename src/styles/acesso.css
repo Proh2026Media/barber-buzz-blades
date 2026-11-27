@@ -408,22 +408,25 @@ body:has(.acesso-loja) {
   min-width: 0;
 }
 
-/* Entrar | Cadastrar: trilho em pílula, a escolhida vira figura. */
+/* Entrar | Cadastrar: a seleção acompanha o canto do trilho. */
 .acesso-abas {
+  --recuo-aba-acesso: .25rem;
+  --borda-aba-acesso: 0px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.25rem;
-  padding: 0.25rem;
+  padding: var(--recuo-aba-acesso);
   background: var(--ac-trilho);
-  border-radius: var(--ac-raio-botao);
+  border-radius: var(--ac-raio-campo);
 }
 .dark .acesso-abas {
-  border: 1px solid var(--ac-borda);
+  --borda-aba-acesso: 1px;
+  border: var(--borda-aba-acesso) solid var(--ac-borda);
 }
 .acesso-aba {
   min-height: 2.75rem;
   padding: 0.5rem 0.75rem;
-  border-radius: var(--ac-raio-botao);
+  border-radius: max(var(--detail-radius), calc(var(--ac-raio-campo) - var(--recuo-aba-acesso) - var(--borda-aba-acesso)));
   font-size: 1rem;
   font-weight: 600;
   color: var(--ac-texto);
