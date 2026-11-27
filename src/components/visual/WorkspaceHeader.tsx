@@ -10,7 +10,10 @@ export function WorkspaceFrame({ children, ...props }: HTMLAttributes<HTMLDivEle
     let main: HTMLElement | null = null;
     let header: HTMLElement | null = null;
     const acompanharRolagem = () => {
-      surface.toggleAttribute("data-conteudo-sob-menu", Boolean(main && main.scrollTop > 1));
+      const topo = main?.scrollTop ?? 0;
+      // Uma pequena faixa de tolerância evita piscar durante o rebote do iPhone.
+      if (topo >= 8) surface.toggleAttribute("data-conteudo-sob-menu", true);
+      else if (topo <= 1) surface.removeAttribute("data-conteudo-sob-menu");
     };
     const measure = () => {
       if (header && celular.matches) {

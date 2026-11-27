@@ -1,6 +1,18 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "rapido.continuar": "Continuar",
+  "rapido.chaveAlternativa": "Puedes volver a intentarlo o entrar con correo o Google.",
+  "rapido.chaveEntrar": "Entrar con clave de acceso",
+  "rapido.enviado": "Si {email} está registrado, recibirás un código allí.",
+  "rapido.codigo": "Código del correo",
+  "rapido.emailEntrar": "Recibir código por correo",
+  "rapido.reenviar": "Reenviar código",
+  "rapido.trocar": "Cambiar correo",
+  "rapido.senha": "Entrar con contraseña",
+  "rapido.chaveAtiva": "Clave de acceso activada.",
+  "rapido.chaveAtivar": "Activar una clave para la próxima cita",
+  "rapido.chaveAdiada": "Puedes activar la clave en otro momento.",
   "receipt.title": "Avisos al cliente",
   "receipt.error": "No se pudieron consultar los avisos.",
   "receipt.loading": "Consultando avisos…",
@@ -2760,7 +2772,8 @@ export const es: Record<MessageKey, string> = {
   "plat.perm.fullPlus": "Todo + niveles y sociedad",
   "plat.perm.below": "Lo defines en la tabla",
   "plat.mgr.tipCare": "Cuida el establecimiento desde la plataforma",
-  "plat.mgr.tipApproval": "Los cambios de identidad visual y de la página requieren la aprobación de los propietarios",
+  "plat.mgr.tipApproval":
+    "Los cambios de identidad visual y de la página requieren la aprobación de los propietarios",
   "plat.mgr.noName": "Persona sin nombre",
   "plat.mgr.seesNumbers": "Ve números",
   "plat.mgr.emptyShop": "Ningún gestor en este establecimiento",
@@ -2982,7 +2995,8 @@ export const es: Record<MessageKey, string> = {
   "manager.loadFailed": "No se pudieron cargar tus establecimientos.",
   "manager.noShops": "Aún no tienes establecimientos asignados.",
   "manager.requestFailed": "No se pudo confirmar el envío de la solicitud.",
-  "plat.mgr.assignmentScope": "Puede gestionar el equipo y los permisos de este establecimiento. Los cambios visuales requieren la aprobación de los propietarios.",
+  "plat.mgr.assignmentScope":
+    "Puede gestionar el equipo y los permisos de este establecimiento. Los cambios visuales requieren la aprobación de los propietarios.",
   "area.platformTitle": "Todos los establecimientos",
   "area.customer": "Cliente",
   "area.customerTitle": "Reservar como cliente",

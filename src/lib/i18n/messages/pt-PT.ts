@@ -1,6 +1,18 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const ptPT: Record<MessageKey, string> = {
+  "rapido.continuar": "Continuar",
+  "rapido.chaveAlternativa": "Pode tentar novamente ou entrar por e-mail ou Google.",
+  "rapido.chaveEntrar": "Entrar com chave de acesso",
+  "rapido.enviado": "Se o e-mail {email} estiver registado, receberá um código.",
+  "rapido.codigo": "Código do e-mail",
+  "rapido.emailEntrar": "Receber código por e-mail",
+  "rapido.reenviar": "Reenviar código",
+  "rapido.trocar": "Alterar e-mail",
+  "rapido.senha": "Entrar com palavra-passe",
+  "rapido.chaveAtiva": "Chave de acesso ativada.",
+  "rapido.chaveAtivar": "Ativar chave para a próxima marcação",
+  "rapido.chaveAdiada": "Pode ativar a chave noutra ocasião.",
   "receipt.title": "Avisos ao cliente",
   "receipt.error": "Não foi possível consultar os avisos.",
   "receipt.loading": "Consultando avisos…",
@@ -2970,7 +2982,8 @@ export const ptPT: Record<MessageKey, string> = {
   "manager.loadFailed": "Não foi possível carregar os seus estabelecimentos.",
   "manager.noShops": "Ainda não tem estabelecimentos atribuídos.",
   "manager.requestFailed": "Não foi possível confirmar o envio do pedido.",
-  "plat.mgr.assignmentScope": "Pode gerir a equipa e as permissões deste estabelecimento. As alterações visuais precisam da aprovação dos proprietários.",
+  "plat.mgr.assignmentScope":
+    "Pode gerir a equipa e as permissões deste estabelecimento. As alterações visuais precisam da aprovação dos proprietários.",
   "area.platformTitle": "Todos os estabelecimentos",
   "area.customer": "Cliente",
   "area.customerTitle": "Marcar como cliente",

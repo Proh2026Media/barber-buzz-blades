@@ -1,3 +1,4 @@
+import { isPlatformApexHost } from "@/lib/shop/host";
 import { PushNotificationsCard } from "@/features/notifications/PushNotifications";
 import { CareGroupPanel } from "@/features/whatsapp/CareGroupPanel";
 import { PrivacyCenter } from "@/features/insights/PrivacyCenter";
@@ -93,7 +94,6 @@ type CustomerProfileProps = {
   onSaved?: (name: string) => void;
   /** "Seu ritmo": exibido logo depois do WhatsApp, num cartão próprio. */
   children?: ReactNode;
-
 };
 
 export function CustomerProfile(props: CustomerProfileProps) {
@@ -326,7 +326,9 @@ function AccountCustomerProfile({
     setBusy(true);
     setSignOutError(null);
     try {
-      const { error: failure } = await supabase.auth.signOut();
+      const { error: failure } = await supabase.auth.signOut({
+        scope: isPlatformApexHost() ? "global" : "local",
+      });
       if (failure) throw failure;
       if (!currentSession.current || currentSession.current.user.id === userId) {
         window.location.href = "/auth";

@@ -1,3 +1,4 @@
+import { isPlatformApexHost } from "@/lib/shop/host";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { initialPairingCountry, normalizePairingPhone } from "@/features/whatsapp/pairing-phone";
 import { otpRequestBody } from "@/lib/auth/otp-request";
@@ -222,7 +223,7 @@ export function ReservationAccessGate({
       const { data: sessionData } = await supabase.auth.getSession();
       const uid = sessionData.session?.user?.id;
       if (!uid || !lookup || uid !== lookup.customer_id) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: isPlatformApexHost() ? "global" : "local" });
         throw new Error(t("gate.wrongPhone"));
       }
       onAuthenticated();

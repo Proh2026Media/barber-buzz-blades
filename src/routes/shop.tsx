@@ -1,5 +1,5 @@
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
-import { isPlatformApexHost, PLATFORM_BASE_HOST } from "@/lib/shop/host";
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { isPlatformApexHost, resolveShopFromCurrentHost } from "@/lib/shop/host";
 import { ShopShell } from "@/features/shop/ShopShell";
 import { idLojaGerenciada } from "@/lib/auth/destination";
 import { requireProfessional, requireRole } from "@/lib/auth/guards";
@@ -9,14 +9,25 @@ export const Route = createFileRoute("/shop")({
   ssr: false,
   beforeLoad: async ({ location }) => {
     const parametros = new URLSearchParams(location.searchStr);
-    const id = parametros.get("gestao");
-    if (id === null) return { profile: await requireProfessional("/shop"), managedShop: null };
-    if (!isPlatformApexHost()) {
-      throw redirect({ href: `https://${PLATFORM_BASE_HOST}/shop${location.searchStr}` });
+    const solicitado = parametros.get("gestao");
+    const next = location.pathname + location.searchStr;
+    const profile =
+      solicitado === null
+        ? await requireProfessional(next)
+        : await requireRole(next, ["platform_admin"]);
+    let id = solicitado;
+    if (!isPlatformApexHost() && profile.primaryRole === "platform_admin") {
+      const loja = await resolveShopFromCurrentHost();
+      if (!loja || (solicitado !== null && solicitado !== loja.shop_id)) throw notFound();
+      id = loja.shop_id;
     }
-    const profile = await requireRole(location.pathname + location.searchStr, ["platform_admin"]);
+    if (id === null) return { profile, managedShop: null };
     if (!idLojaGerenciada(id)) throw notFound();
-    const { data, error } = await supabase.from("barbershops").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await supabase
+      .from("barbershops")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
     if (error) throw error;
     if (!data) throw notFound();
     return { profile, managedShop: data };
@@ -26,5 +37,11 @@ export const Route = createFileRoute("/shop")({
 
 function ShopRoute() {
   const { profile, managedShop } = Route.useRouteContext();
-  return <ShopShell key={managedShop?.id ?? profile.user.id} profile={profile} managedShop={managedShop} />;
+  return (
+    <ShopShell
+      key={managedShop?.id ?? profile.user.id}
+      profile={profile}
+      managedShop={managedShop}
+    />
+  );
 }

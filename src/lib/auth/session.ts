@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { capabilitiesFor, type ShopCapabilities, type ShopPermissionMap } from "./capabilities";
 import { hasShopToOpen, sortShopActors } from "./shop-acting";
 import { areaAccessFor } from "./areas";
-import { isPlatformApexHost } from "../shop/host";
+import { t } from "../i18n";
+import { isPlatformApexHost, resolveShopFromCurrentHost } from "../shop/host";
 import {
   decidePostAuthPath,
   readLastArea,
@@ -39,7 +40,9 @@ export type SessionProfile = {
   primaryRole: AppRole;
 };
 
-export function homeForRole(role: AppRole): "/app" | "/shop" | "/platform" | "/gerencia/estabelecimentos" {
+export function homeForRole(
+  role: AppRole,
+): "/app" | "/shop" | "/platform" | "/gerencia/estabelecimentos" {
   if (role === "account_manager") return "/gerencia/estabelecimentos";
   if (role === "platform_admin") return "/platform";
   if (role === "shop_admin") return "/shop";
@@ -89,14 +92,28 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
 
   const userId = session.user.id;
 
+  const noDominioDaLoja = typeof window !== "undefined" && !isPlatformApexHost();
+  const loja = noDominioDaLoja ? await resolveShopFromCurrentHost() : null;
+  if (noDominioDaLoja && !loja) throw new Error(t("shopLanding.errorTitle"));
+  let vinculos = supabase
+    .from("memberships")
+    .select("*, barbershop:barbershops(*)")
+    .eq("user_id", userId);
+  let equipe = supabase
+    .from("shop_members")
+    .select("*, barbershop:barbershops(*), staff:staff(*)")
+    .eq("user_id", userId)
+    .eq("active", true);
+  if (loja) {
+    vinculos = vinculos.or(
+      `barbershop_id.eq.${loja.shop_id},and(role.eq.platform_admin,barbershop_id.is.null)`,
+    );
+    equipe = equipe.eq("barbershop_id", loja.shop_id);
+  }
   const [profileResult, membershipsResult, actorsResult] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-    supabase.from("memberships").select("*, barbershop:barbershops(*)").eq("user_id", userId),
-    supabase
-      .from("shop_members")
-      .select("*, barbershop:barbershops(*), staff:staff(*)")
-      .eq("user_id", userId)
-      .eq("active", true),
+    vinculos,
+    equipe,
   ]);
 
   // Schema may not be applied yet — degrade to customer home.
@@ -198,6 +215,7 @@ export async function resolvePostAuthPath(preferredNext?: string): Promise<strin
   if (!profile) return "/auth";
   return decidePostAuthPath({
     next: preferredNext,
+    onShopHost: !isPlatformApexHost(),
     access: {
       ...areaAccessOf(profile),
       manager: isPlatformApexHost() && hasAnyRole(profile.memberships, ["account_manager"]),
@@ -212,6 +230,7 @@ export async function resolvePostAuthPath(preferredNext?: string): Promise<strin
  * função dos convites no banco, segue para os outros motivos.
  */
 export async function professionalRefusal(profile: SessionProfile): Promise<AccessNotice> {
+  if (!isPlatformApexHost()) return "sem-acesso";
   return professionalRefusalFrom({
     invites: async () => {
       const { data, error } = await supabase.rpc("get_my_pending_shop_invites");

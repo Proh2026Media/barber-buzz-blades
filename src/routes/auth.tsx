@@ -1,4 +1,6 @@
 import { Abertura } from "@/components/Abertura";
+import { AcessoRapido } from "@/features/auth/AcessoRapido";
+import { lojaPiloto, noPiloto } from "@/lib/auth/piloto-agendamento";
 import { MarcaAurset } from "@/features/auth/acesso/MarcaAurset";
 import { Campo } from "@/features/auth/acesso/Campo";
 import { PainelAcesso } from "@/features/auth/acesso/PainelAcesso";
@@ -430,6 +432,7 @@ function AuthPage() {
   });
   const { t, locale } = useI18n();
   // Convite da barbearia ("Cadastre-se no app"): abre em Cadastrar, com o WhatsApp preenchido.
+  const [usarSenhaPiloto, setUsarSenhaPiloto] = useState(false);
   const [mode, setMode] = useState<AuthMode>(
     recovery ? "recovery" : cadastro ? "signup" : "signin",
   );
@@ -731,7 +734,9 @@ function AuthPage() {
       if (cancelled) return;
       if (maybeRedirectToCanonical(resolved)) return;
       setHostShopSlug(resolved?.shop_slug ?? null);
-    })().catch(() => { if (!cancelled) setHostShopSlug(null); });
+    })().catch(() => {
+      if (!cancelled) setHostShopSlug(null);
+    });
     return () => {
       cancelled = true;
     };
@@ -790,7 +795,10 @@ function AuthPage() {
       } catch {
         if (!cancelled) setBrand(fallback);
       } finally {
-        if (!cancelled) { setMarcaConsultada(effectiveShopRef); setBrandLoading(false); }
+        if (!cancelled) {
+          setMarcaConsultada(effectiveShopRef);
+          setBrandLoading(false);
+        }
       }
     })();
     return () => {
@@ -1891,7 +1899,10 @@ function AuthPage() {
       (!isPlatformApexHost() && hostShopSlug === undefined) ||
       (!!effectiveShopRef && (brandLoading || marcaConsultada !== effectiveShopRef));
     if (aguardando) return <Abertura />;
-    if (!brand.shopId) return <Abertura erro={t("shopLanding.errorTitle")} tentar={() => window.location.reload()} />;
+    if (!brand.shopId)
+      return (
+        <Abertura erro={t("shopLanding.errorTitle")} tentar={() => window.location.reload()} />
+      );
   }
 
   const tabs = [
@@ -1962,7 +1973,10 @@ function AuthPage() {
                       ) : (
                         <SeloBarbearia
                           lojaId={brand.shopId}
-                          tema={{ primary_color: brand.primaryColor, accent_color: brand.accentColor }}
+                          tema={{
+                            primary_color: brand.primaryColor,
+                            accent_color: brand.accentColor,
+                          }}
                           nome={brand.displayName}
                           tamanho={44}
                         />
@@ -2191,400 +2205,418 @@ function AuthPage() {
                       </Notice>
                     )}
 
-                  <form
-                    onSubmit={(e) => void handleSubmit(e)}
-                    noValidate={noNativeValidation}
-                    className="acesso-form"
-                  >
-                    {mode === "forgot" && linkExpired && (
-                      <Notice
-                        tone="warning"
-                        title={t("entry.link.expiredTitle")}
-                        action={{
-                          label: t("entry.link.expiredAction"),
-                          onClick: () => {
-                            setRecoveryChannel("email");
-                            window.requestAnimationFrame(() => emailInputRef.current?.focus());
-                          },
-                        }}
-                      >
-                        {t("entry.link.expiredDetail")}
-                      </Notice>
-                    )}
-
-                    {mode === "signup" && (
-                      <Campo
-                        id="acesso-nome"
-                        rotulo={t("acesso.nome.rotulo")}
-                        icone={UserRound}
-                        erro={fieldErrors.name}
-                        erroId="signup-name-error"
-                        className="acesso-campo-nome"
-                      >
-                        <input
-                          id="acesso-nome"
-                          ref={nameInputRef}
-                          type="text"
-                          // Sem validação nativa: o erro traduzido aparece junto do campo.
-                          aria-required="true"
-                          maxLength={NAME_MAX}
-                          autoComplete="name"
-                          autoCapitalize="words"
-                          placeholder={t("acesso.nome.exemplo")}
-                          value={fullName}
-                          onChange={(e) => {
-                            setFullName(e.target.value);
-                            if (fieldErrors.name)
-                              setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                  {mode === "signin" &&
+                  !usarSenhaPiloto &&
+                  !shopContext.demo &&
+                  noPiloto() &&
+                  brand.shopId === lojaPiloto.id ? (
+                    <AcessoRapido
+                      aoEntrar={goAfterAuthLocal}
+                      usarSenha={() => setUsarSenhaPiloto(true)}
+                    />
+                  ) : (
+                    <form
+                      onSubmit={(e) => void handleSubmit(e)}
+                      noValidate={noNativeValidation}
+                      className="acesso-form"
+                    >
+                      {mode === "forgot" && linkExpired && (
+                        <Notice
+                          tone="warning"
+                          title={t("entry.link.expiredTitle")}
+                          action={{
+                            label: t("entry.link.expiredAction"),
+                            onClick: () => {
+                              setRecoveryChannel("email");
+                              window.requestAnimationFrame(() => emailInputRef.current?.focus());
+                            },
                           }}
-                          aria-invalid={fieldErrors.name ? true : undefined}
-                          aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
-                        />
-                      </Campo>
-                    )}
+                        >
+                          {t("entry.link.expiredDetail")}
+                        </Notice>
+                      )}
 
-                    {mode !== "recovery" &&
-                      mode !== "verifyPhone" &&
-                      !(
-                        mode === "forgot" &&
-                        recoveryChannel === "whatsapp" &&
-                        effectiveShopRef
-                      ) && (
+                      {mode === "signup" && (
                         <Campo
-                          id="acesso-email"
-                          rotulo={t("auth.field.email")}
-                          icone={Mail}
-                          erro={emailError}
-                          erroId="signup-email-error"
+                          id="acesso-nome"
+                          rotulo={t("acesso.nome.rotulo")}
+                          icone={UserRound}
+                          erro={fieldErrors.name}
+                          erroId="signup-name-error"
+                          className="acesso-campo-nome"
                         >
                           <input
-                            id="acesso-email"
-                            ref={emailInputRef}
-                            type="email"
-                            inputMode="email"
+                            id="acesso-nome"
+                            ref={nameInputRef}
+                            type="text"
+                            // Sem validação nativa: o erro traduzido aparece junto do campo.
                             aria-required="true"
-                            autoComplete={mode === "signin" ? "username" : "email"}
-                            autoCapitalize="none"
-                            spellCheck={false}
-                            placeholder={t("auth.field.emailPlaceholder")}
-                            value={email}
+                            maxLength={NAME_MAX}
+                            autoComplete="name"
+                            autoCapitalize="words"
+                            placeholder={t("acesso.nome.exemplo")}
+                            value={fullName}
                             onChange={(e) => {
-                              setEmail(e.target.value);
-                              if (fieldErrors.email)
-                                setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                              setFullName(e.target.value);
+                              if (fieldErrors.name)
+                                setFieldErrors((prev) => ({ ...prev, name: undefined }));
                             }}
-                            aria-invalid={emailError ? true : undefined}
-                            aria-describedby={emailError ? "signup-email-error" : undefined}
+                            aria-invalid={fieldErrors.name ? true : undefined}
+                            aria-describedby={fieldErrors.name ? "signup-name-error" : undefined}
                           />
                         </Campo>
                       )}
 
-                    {mode === "signup" && (
-                      <Campo
-                        id="acesso-telefone"
-                        rotulo={t("acesso.telefone.rotulo")}
-                        icone={Smartphone}
-                        erro={fieldErrors.whatsapp}
-                        erroId="signup-whatsapp-error"
-                        className="acesso-campo-telefone"
-                      >
-                        <input
+                      {mode !== "recovery" &&
+                        mode !== "verifyPhone" &&
+                        !(
+                          mode === "forgot" &&
+                          recoveryChannel === "whatsapp" &&
+                          effectiveShopRef
+                        ) && (
+                          <Campo
+                            id="acesso-email"
+                            rotulo={t("auth.field.email")}
+                            icone={Mail}
+                            erro={emailError}
+                            erroId="signup-email-error"
+                          >
+                            <input
+                              id="acesso-email"
+                              ref={emailInputRef}
+                              type="email"
+                              inputMode="email"
+                              aria-required="true"
+                              autoComplete={mode === "signin" ? "username" : "email"}
+                              autoCapitalize="none"
+                              spellCheck={false}
+                              placeholder={t("auth.field.emailPlaceholder")}
+                              value={email}
+                              onChange={(e) => {
+                                setEmail(e.target.value);
+                                if (fieldErrors.email)
+                                  setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                              }}
+                              aria-invalid={emailError ? true : undefined}
+                              aria-describedby={emailError ? "signup-email-error" : undefined}
+                            />
+                          </Campo>
+                        )}
+
+                      {mode === "signup" && (
+                        <Campo
                           id="acesso-telefone"
-                          ref={signupPhoneRef}
-                          type="tel"
-                          aria-required="true"
-                          inputMode="tel"
-                          autoComplete="tel"
-                          placeholder={locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"}
-                          value={whatsapp}
-                          onChange={(e) => {
-                            setWhatsapp(nextMaskedPhone(whatsapp, e.target.value, locale));
-                            if (fieldErrors.whatsapp)
-                              setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
-                          }}
-                          aria-invalid={fieldErrors.whatsapp ? true : undefined}
-                          aria-describedby={
-                            fieldErrors.whatsapp ? "signup-whatsapp-error" : undefined
-                          }
-                        />
-                      </Campo>
-                    )}
+                          rotulo={t("acesso.telefone.rotulo")}
+                          icone={Smartphone}
+                          erro={fieldErrors.whatsapp}
+                          erroId="signup-whatsapp-error"
+                          className="acesso-campo-telefone"
+                        >
+                          <input
+                            id="acesso-telefone"
+                            ref={signupPhoneRef}
+                            type="tel"
+                            aria-required="true"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder={
+                              locale === "pt-PT" ? "+351 912 345 678" : "(11) 99999-0000"
+                            }
+                            value={whatsapp}
+                            onChange={(e) => {
+                              setWhatsapp(nextMaskedPhone(whatsapp, e.target.value, locale));
+                              if (fieldErrors.whatsapp)
+                                setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
+                            }}
+                            aria-invalid={fieldErrors.whatsapp ? true : undefined}
+                            aria-describedby={
+                              fieldErrors.whatsapp ? "signup-whatsapp-error" : undefined
+                            }
+                          />
+                        </Campo>
+                      )}
 
-                    {mode === "forgot" && whatsappRecovery && !otpSent && (
-                      <Campo
-                        id="acesso-telefone-rec"
-                        rotulo={t("acesso.telefone.rotulo")}
-                        icone={Smartphone}
-                      >
-                        <input
+                      {mode === "forgot" && whatsappRecovery && !otpSent && (
+                        <Campo
                           id="acesso-telefone-rec"
-                          type="tel"
-                          required
-                          inputMode="tel"
-                          autoComplete="tel"
-                          placeholder="(11) 99999-0000"
-                          value={whatsapp}
-                          onChange={(e) => setWhatsapp(e.target.value)}
-                        />
-                      </Campo>
-                    )}
+                          rotulo={t("acesso.telefone.rotulo")}
+                          icone={Smartphone}
+                        >
+                          <input
+                            id="acesso-telefone-rec"
+                            type="tel"
+                            required
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="(11) 99999-0000"
+                            value={whatsapp}
+                            onChange={(e) => setWhatsapp(e.target.value)}
+                          />
+                        </Campo>
+                      )}
 
-                    {mode === "forgot" && whatsappRecovery && otpSent && (
-                      <div className="grid gap-3">
-                        <div className="acesso-passos flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                          <Smartphone className="size-4 shrink-0" aria-hidden="true" />
-                          <span className="font-bold tabular-nums">{formatBrPhone(whatsapp)}</span>
+                      {mode === "forgot" && whatsappRecovery && otpSent && (
+                        <div className="grid gap-3">
+                          <div className="acesso-passos flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                            <Smartphone className="size-4 shrink-0" aria-hidden="true" />
+                            <span className="font-bold tabular-nums">
+                              {formatBrPhone(whatsapp)}
+                            </span>
+                            <button
+                              type="button"
+                              className="acesso-link ms-auto"
+                              onClick={() => {
+                                setOtpSent(false);
+                                setOtpCode("");
+                                setError(null);
+                                setInfo(null);
+                              }}
+                            >
+                              {t("fix2.whats.changeNumber")}
+                            </button>
+                            {info && <p className="acesso-ajuda w-full">{info}</p>}
+                          </div>
+                          <label htmlFor="recovery-code" className="acesso-rotulo">
+                            {t("auth.field.otp")}
+                          </label>
+                          <CodeInput
+                            id="recovery-code"
+                            value={otpCode}
+                            onChange={(value) => {
+                              setOtpCode(value);
+                              setError(null);
+                            }}
+                            autoFocus
+                            invalid={Boolean(error)}
+                            describedBy={error ? "auth-code-error" : undefined}
+                          />
+                          {error && <Notice id="auth-code-error" tone="danger" title={error} />}
+                          <ResendButton
+                            className="justify-self-start"
+                            secondsLeft={recoveryResendIn}
+                            totalSeconds={PHONE_RESEND_SECONDS}
+                            busy={busy}
+                            onClick={() => void resendFromForgot("code")}
+                            label={t("fix2.whats.resend")}
+                            waitLabel={t("fix2.whats.resendIn", { seconds: recoveryResendIn })}
+                            busyLabel={t("fix2.whats.sending")}
+                          />
+                        </div>
+                      )}
+
+                      {mode === "verifyPhone" && !phoneUnavailable && (
+                        <div className="grid gap-3">
+                          <CodeSentCard
+                            toLabel={t("entry.code.sentTo")}
+                            number={formatBrPhone(phoneNumber)}
+                            sender={brand.displayName}
+                            message={t("entry.code.example")}
+                            exampleLabel={t("entry.example")}
+                            hideExample={phoneCode.length > 0}
+                          />
+                          <label htmlFor="phone-code" className="acesso-rotulo">
+                            {t("fix2.whats.codeLabel")}
+                          </label>
+                          <CodeInput
+                            id="phone-code"
+                            value={phoneCode}
+                            onChange={(value) => {
+                              setPhoneCode(value);
+                              setError(null);
+                            }}
+                            autoFocus
+                            invalid={Boolean(error)}
+                            describedBy={error ? "auth-code-error" : "phone-code-hint"}
+                          />
+                          {error ? (
+                            <Notice id="auth-code-error" tone="danger" title={error} />
+                          ) : (
+                            <Hint icon={Hourglass} className="text-xs">
+                              <span id="phone-code-hint">{t("fix2.whats.codeHint")}</span>
+                            </Hint>
+                          )}
+                        </div>
+                      )}
+
+                      {(mode === "signin" || mode === "signup" || mode === "recovery") && (
+                        <Campo
+                          id="acesso-senha"
+                          rotulo={
+                            mode === "recovery"
+                              ? t("auth.field.newPassword")
+                              : t("auth.field.password")
+                          }
+                          icone={LockKeyhole}
+                          erro={passwordError}
+                          erroId="signup-password-error"
+                        >
+                          <input
+                            id="acesso-senha"
+                            type={showPassword ? "text" : "password"}
+                            aria-required="true"
+                            minLength={6}
+                            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                            placeholder={
+                              mode === "signin"
+                                ? t("entry.signin.passwordPlaceholder")
+                                : t("entry.newPasswordPlaceholder")
+                            }
+                            ref={passwordInputRef}
+                            value={password}
+                            onChange={(e) => {
+                              setPassword(e.target.value);
+                              if (fieldErrors.password)
+                                setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                            }}
+                            aria-invalid={passwordError ? true : undefined}
+                            aria-describedby={
+                              [
+                                passwordError ? "signup-password-error" : null,
+                                mode !== "signin" ? "auth-password-rules" : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" ") || undefined
+                            }
+                          />
                           <button
                             type="button"
-                            className="acesso-link ms-auto"
-                            onClick={() => {
-                              setOtpSent(false);
-                              setOtpCode("");
-                              setError(null);
-                              setInfo(null);
-                            }}
+                            onClick={() => setShowPassword((current) => !current)}
+                            className="acesso-olho"
+                            aria-label={
+                              showPassword ? t("auth.hidePassword") : t("auth.showPassword")
+                            }
+                            aria-pressed={showPassword}
                           >
-                            {t("fix2.whats.changeNumber")}
+                            {showPassword ? (
+                              <EyeOff aria-hidden="true" />
+                            ) : (
+                              <Eye aria-hidden="true" />
+                            )}
                           </button>
-                          {info && <p className="acesso-ajuda w-full">{info}</p>}
-                        </div>
-                        <label htmlFor="recovery-code" className="acesso-rotulo">
-                          {t("auth.field.otp")}
-                        </label>
-                        <CodeInput
-                          id="recovery-code"
-                          value={otpCode}
-                          onChange={(value) => {
-                            setOtpCode(value);
-                            setError(null);
-                          }}
-                          autoFocus
-                          invalid={Boolean(error)}
-                          describedBy={error ? "auth-code-error" : undefined}
-                        />
-                        {error && <Notice id="auth-code-error" tone="danger" title={error} />}
-                        <ResendButton
-                          className="justify-self-start"
-                          secondsLeft={recoveryResendIn}
-                          totalSeconds={PHONE_RESEND_SECONDS}
-                          busy={busy}
-                          onClick={() => void resendFromForgot("code")}
-                          label={t("fix2.whats.resend")}
-                          waitLabel={t("fix2.whats.resendIn", { seconds: recoveryResendIn })}
-                          busyLabel={t("fix2.whats.sending")}
-                        />
-                      </div>
-                    )}
-
-                    {mode === "verifyPhone" && !phoneUnavailable && (
-                      <div className="grid gap-3">
-                        <CodeSentCard
-                          toLabel={t("entry.code.sentTo")}
-                          number={formatBrPhone(phoneNumber)}
-                          sender={brand.displayName}
-                          message={t("entry.code.example")}
-                          exampleLabel={t("entry.example")}
-                          hideExample={phoneCode.length > 0}
-                        />
-                        <label htmlFor="phone-code" className="acesso-rotulo">
-                          {t("fix2.whats.codeLabel")}
-                        </label>
-                        <CodeInput
-                          id="phone-code"
-                          value={phoneCode}
-                          onChange={(value) => {
-                            setPhoneCode(value);
-                            setError(null);
-                          }}
-                          autoFocus
-                          invalid={Boolean(error)}
-                          describedBy={error ? "auth-code-error" : "phone-code-hint"}
-                        />
-                        {error ? (
-                          <Notice id="auth-code-error" tone="danger" title={error} />
-                        ) : (
-                          <Hint icon={Hourglass} className="text-xs">
-                            <span id="phone-code-hint">{t("fix2.whats.codeHint")}</span>
-                          </Hint>
-                        )}
-                      </div>
-                    )}
-
-                    {(mode === "signin" || mode === "signup" || mode === "recovery") && (
-                      <Campo
-                        id="acesso-senha"
-                        rotulo={
-                          mode === "recovery"
-                            ? t("auth.field.newPassword")
-                            : t("auth.field.password")
-                        }
-                        icone={LockKeyhole}
-                        erro={passwordError}
-                        erroId="signup-password-error"
-                      >
-                        <input
-                          id="acesso-senha"
-                          type={showPassword ? "text" : "password"}
-                          aria-required="true"
-                          minLength={6}
-                          autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                          placeholder={
-                            mode === "signin"
-                              ? t("entry.signin.passwordPlaceholder")
-                              : t("entry.newPasswordPlaceholder")
-                          }
-                          ref={passwordInputRef}
-                          value={password}
-                          onChange={(e) => {
-                            setPassword(e.target.value);
-                            if (fieldErrors.password)
-                              setFieldErrors((prev) => ({ ...prev, password: undefined }));
-                          }}
-                          aria-invalid={passwordError ? true : undefined}
-                          aria-describedby={
-                            [
-                              passwordError ? "signup-password-error" : null,
-                              mode !== "signin" ? "auth-password-rules" : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") || undefined
-                          }
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((current) => !current)}
-                          className="acesso-olho"
-                          aria-label={
-                            showPassword ? t("auth.hidePassword") : t("auth.showPassword")
-                          }
-                          aria-pressed={showPassword}
-                        >
-                          {showPassword ? (
-                            <EyeOff aria-hidden="true" />
-                          ) : (
-                            <Eye aria-hidden="true" />
-                          )}
-                        </button>
-                      </Campo>
-                    )}
-                    {mode === "signup" && (
-                      <PasswordRules
-                        id="auth-password-rules"
-                        password={password}
-                        showErrors={Boolean(fieldErrors.password)}
-                        className="-mt-2"
-                      />
-                    )}
-                    {mode === "signin" && (
-                      <div className="acesso-linha-fim">
-                        <button
-                          type="button"
-                          onClick={() => switchMode("forgot")}
-                          className="acesso-link"
-                        >
-                          {t("auth.forgot")}
-                        </button>
-                      </div>
-                    )}
-
-                    {mode === "recovery" && (
-                      <Campo
-                        id="acesso-confirmar"
-                        rotulo={t("auth.field.confirmPassword")}
-                        icone={LockKeyhole}
-                        erro={fieldErrors.confirm}
-                        erroId="recovery-confirm-error"
-                      >
-                        <input
-                          id="acesso-confirmar"
-                          ref={confirmInputRef}
-                          type={showPassword ? "text" : "password"}
-                          aria-required="true"
-                          minLength={6}
-                          autoComplete="new-password"
-                          placeholder={t("auth.field.confirmPlaceholder")}
-                          value={passwordConfirm}
-                          onChange={(e) => {
-                            setPasswordConfirm(e.target.value);
-                            if (fieldErrors.confirm)
-                              setFieldErrors((prev) => ({ ...prev, confirm: undefined }));
-                          }}
-                          aria-invalid={fieldErrors.confirm ? true : undefined}
-                          aria-describedby={
-                            fieldErrors.confirm
-                              ? "recovery-confirm-error auth-password-rules"
-                              : "auth-password-rules"
-                          }
-                        />
-                      </Campo>
-                    )}
-                    {mode === "recovery" && (
-                      <PasswordRules
-                        id="auth-password-rules"
-                        password={password}
-                        confirm={passwordConfirm}
-                        className="-mt-2"
-                      />
-                    )}
-
-                    {/* Resultado da ação logo acima do botão (no código, ele fica sob as caixas). */}
-                    {error && !codeStep && <Notice tone="danger" title={error} />}
-                    {notice && !(mode === "forgot" && whatsappRecovery && otpSent) && (
-                      <Notice tone={notice.tone} title={notice.text} />
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={busy}
-                      aria-busy={busy && !googleBusy ? true : undefined}
-                      className="acesso-botao"
-                    >
-                      {busy && !googleBusy && (
-                        <Loader2 className="motion-safe:animate-spin" aria-hidden="true" />
+                        </Campo>
                       )}
-                      <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
-                      {!(busy && !googleBusy) && <SubmitIcon aria-hidden="true" />}
-                    </button>
-                    {mode === "verifyPhone" && !phoneUnavailable && (
-                      <div className="grid justify-items-center gap-1">
-                        <ResendButton
-                          secondsLeft={phoneResendIn}
-                          totalSeconds={PHONE_RESEND_SECONDS}
-                          busy={busy}
-                          onClick={() => void resendPhoneCode()}
-                          label={t("fix2.whats.resend")}
-                          waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
-                          busyLabel={t("fix2.whats.sending")}
+                      {mode === "signup" && (
+                        <PasswordRules
+                          id="auth-password-rules"
+                          password={password}
+                          showErrors={Boolean(fieldErrors.password)}
+                          className="-mt-2"
                         />
-                        {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta
+                      )}
+                      {mode === "signin" && (
+                        <div className="acesso-linha-fim">
+                          <button
+                            type="button"
+                            onClick={() => switchMode("forgot")}
+                            className="acesso-link"
+                          >
+                            {t("auth.forgot")}
+                          </button>
+                        </div>
+                      )}
+
+                      {mode === "recovery" && (
+                        <Campo
+                          id="acesso-confirmar"
+                          rotulo={t("auth.field.confirmPassword")}
+                          icone={LockKeyhole}
+                          erro={fieldErrors.confirm}
+                          erroId="recovery-confirm-error"
+                        >
+                          <input
+                            id="acesso-confirmar"
+                            ref={confirmInputRef}
+                            type={showPassword ? "text" : "password"}
+                            aria-required="true"
+                            minLength={6}
+                            autoComplete="new-password"
+                            placeholder={t("auth.field.confirmPlaceholder")}
+                            value={passwordConfirm}
+                            onChange={(e) => {
+                              setPasswordConfirm(e.target.value);
+                              if (fieldErrors.confirm)
+                                setFieldErrors((prev) => ({ ...prev, confirm: undefined }));
+                            }}
+                            aria-invalid={fieldErrors.confirm ? true : undefined}
+                            aria-describedby={
+                              fieldErrors.confirm
+                                ? "recovery-confirm-error auth-password-rules"
+                                : "auth-password-rules"
+                            }
+                          />
+                        </Campo>
+                      )}
+                      {mode === "recovery" && (
+                        <PasswordRules
+                          id="auth-password-rules"
+                          password={password}
+                          confirm={passwordConfirm}
+                          className="-mt-2"
+                        />
+                      )}
+
+                      {/* Resultado da ação logo acima do botão (no código, ele fica sob as caixas). */}
+                      {error && !codeStep && <Notice tone="danger" title={error} />}
+                      {notice && !(mode === "forgot" && whatsappRecovery && otpSent) && (
+                        <Notice tone={notice.tone} title={notice.text} />
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        aria-busy={busy && !googleBusy ? true : undefined}
+                        className="acesso-botao"
+                      >
+                        {busy && !googleBusy && (
+                          <Loader2 className="motion-safe:animate-spin" aria-hidden="true" />
+                        )}
+                        <span>{busy && !googleBusy ? submit.busy : submit.label}</span>
+                        {!(busy && !googleBusy) && <SubmitIcon aria-hidden="true" />}
+                      </button>
+                      {mode === "verifyPhone" && !phoneUnavailable && (
+                        <div className="grid justify-items-center gap-1">
+                          <ResendButton
+                            secondsLeft={phoneResendIn}
+                            totalSeconds={PHONE_RESEND_SECONDS}
+                            busy={busy}
+                            onClick={() => void resendPhoneCode()}
+                            label={t("fix2.whats.resend")}
+                            waitLabel={t("fix2.whats.resendIn", { seconds: phoneResendIn })}
+                            busyLabel={t("fix2.whats.sending")}
+                          />
+                          {/* "Confirmar depois" entra no app; "Número errado?" entra direto na Conta
                           (a troca é feita lá, não aqui). */}
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void skipPhoneVerification()}
-                          aria-describedby="phone-later-notes"
-                          className="acesso-link acesso-link-suave"
-                        >
-                          {t("fix3.auth.phoneSkip")}
-                          <ArrowRight aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void fixNumberInProfile()}
-                          className="acesso-link acesso-link-suave"
-                        >
-                          <UserRound aria-hidden="true" />
-                          {t("entry.phone.wrongNumberLink")}
-                          <ArrowRight aria-hidden="true" />
-                        </button>
-                        <p id="phone-later-notes" className="acesso-ajuda flex items-start gap-1.5">
-                          <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-                          {t("entry.phone.laterNote")}
-                        </p>
-                      </div>
-                    )}
-                  </form>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void skipPhoneVerification()}
+                            aria-describedby="phone-later-notes"
+                            className="acesso-link acesso-link-suave"
+                          >
+                            {t("fix3.auth.phoneSkip")}
+                            <ArrowRight aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void fixNumberInProfile()}
+                            className="acesso-link acesso-link-suave"
+                          >
+                            <UserRound aria-hidden="true" />
+                            {t("entry.phone.wrongNumberLink")}
+                            <ArrowRight aria-hidden="true" />
+                          </button>
+                          <p
+                            id="phone-later-notes"
+                            className="acesso-ajuda flex items-start gap-1.5"
+                          >
+                            <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                            {t("entry.phone.laterNote")}
+                          </p>
+                        </div>
+                      )}
+                    </form>
+                  )}
 
                   {(mode === "forgot" || mode === "recovery") && (
                     <button

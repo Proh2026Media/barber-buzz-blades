@@ -1,3 +1,4 @@
+import { Abertura } from "./components/Abertura";
 import { DEFAULT_LOCALE, localeFromTag, readLocale } from "./lib/i18n/locale";
 import { loadLocale } from "./lib/i18n/translate";
 import { QueryClient } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ export const getRouter = async () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    defaultPendingComponent: Abertura,
     defaultPreloadStaleTime: 0,
     // WordPress usava /ezequiel/ — normaliza para /ezequiel e a rota $barberSlug resolve.
     trailingSlash: "never",

@@ -104,11 +104,13 @@ test("unrecognized English errors fall back instead of showing foreign text", ()
   );
 });
 
-/** Lê os códigos do tipo `ErrorCode` declarado numa função do servidor. */
+/** Lê os códigos declarados em conjunto e os devolvidos diretamente nas respostas. */
 function serverErrorCodes(path: string): string[] {
   const source = readFileSync(new URL(path, import.meta.url), "utf8");
   const union = /type ErrorCode =([\s\S]*?);/.exec(source)?.[1] ?? "";
-  return [...union.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]);
+  const declarados = [...union.matchAll(/"([a-z_]+)"/g)];
+  const literais = [...source.matchAll(/error_code:\s*"([a-z_]+)"/g)];
+  return [...new Set([...declarados, ...literais].map((match) => match[1]))];
 }
 
 test("every error_code returned by auth-otp and register-shop is known to the app", () => {

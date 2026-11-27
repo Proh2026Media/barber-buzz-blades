@@ -157,6 +157,27 @@ test("vínculos → acesso: cada papel abre só as áreas que tem", () => {
 
 const BOOKING = "/app?shop=barbearia-x&day=2026-10-09&time=10:00";
 
+test("admin entra na gestão pelo domínio da loja, inclusive com link de profissional", () => {
+  for (const access of [ACCESS.admin, ACCESS.adminOwner]) {
+    for (const next of [undefined, "/app", BOOKING, "/app?shop=loja-b&barber=joao"]) {
+      assert.equal(
+        decidePostAuthPath({ access, next, onShopHost: true, lastArea: "app" }),
+        "/shop",
+      );
+    }
+    assert.equal(
+      decidePostAuthPath({ access, next: "/shop?secao=avisos", onShopHost: true }),
+      "/shop?secao=avisos",
+    );
+    assert.equal(decidePostAuthPath({ access, next: "/politica", onShopHost: true }), "/politica");
+    assert.equal(decidePostAuthPath({ access }), "/platform");
+  }
+  assert.equal(
+    decidePostAuthPath({ access: ACCESS.cliente, next: BOOKING, onShopHost: true }),
+    BOOKING,
+  );
+});
+
 test("vínculos → acesso → destino: agendar vence a hierarquia; o resto segue o acesso", () => {
   const expected: Record<string, Record<string, string>> = {
     adminOwner: {
@@ -540,4 +561,14 @@ test("administrador que também é gerente abre a lista global e tem uma única 
     "/platform",
     "/app",
   ]);
+});
+
+test("domínio da loja restringe destinos globais e preserva a escolha do cliente", () => {
+  for (const next of ["/platform", "/gerencia/estabelecimentos", "/demo"]) {
+    assert.equal(decidePostAuthPath({ access: ACCESS.admin, onShopHost: true, next }), "/shop");
+    assert.equal(decidePostAuthPath({ access: ACCESS.cliente, onShopHost: true, next }), "/app");
+  }
+  const next =
+    "/app?shop=loja-teste-b&service=bc8595cb-72a7-4428-8a9c-97fe12c18222&barber=teste&day=2026-12-01&time=10:30";
+  assert.equal(decidePostAuthPath({ access: ACCESS.cliente, onShopHost: true, next }), next);
 });

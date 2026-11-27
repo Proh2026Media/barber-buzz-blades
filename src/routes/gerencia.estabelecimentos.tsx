@@ -20,15 +20,15 @@ import { hasAnyRole, type SessionProfile } from "@/lib/auth/session";
 import { useAuthSession } from "@/lib/auth/use-auth-session";
 import { t as traduzir, useI18n } from "@/lib/i18n";
 import type { RequestAppearanceChanges, ShopAppearanceSettings } from "@/lib/shop/branding";
-import { PLATFORM_BASE_HOST, isPlatformApexHost } from "@/lib/shop/host";
+import { isPlatformApexHost } from "@/lib/shop/host";
 
 export const Route = createFileRoute("/gerencia/estabelecimentos")({
   ssr: false,
   beforeLoad: async () => {
     if (!isPlatformApexHost()) {
       throw redirect({
-        href: `https://${PLATFORM_BASE_HOST}/gerencia/estabelecimentos`,
-        reloadDocument: true,
+        to: "/shop",
+        replace: true,
       });
     }
     const profile = await requireRole("/gerencia/estabelecimentos", [

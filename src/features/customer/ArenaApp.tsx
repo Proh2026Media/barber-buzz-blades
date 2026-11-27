@@ -1,3 +1,5 @@
+import { AtivarChave } from "@/features/auth/AcessoRapido";
+import { lojaPiloto, noPiloto } from "@/lib/auth/piloto-agendamento";
 import { Abertura } from "@/components/Abertura";
 import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { WhatsAppHealthIndicator } from "@/features/platform/WhatsAppHealthIndicator";
@@ -131,7 +133,11 @@ import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { isPlatformApexHost } from "@/lib/shop/host";
-import { getCustomerSessionProfile, getSessionProfile, type SessionProfile } from "@/lib/auth/session";
+import {
+  getCustomerSessionProfile,
+  getSessionProfile,
+  type SessionProfile,
+} from "@/lib/auth/session";
 import type { AccessNotice } from "@/lib/auth/destination";
 import { useAreaSwitch, useMyAreas, useRememberArea } from "@/features/account/useAreas";
 import { CUSTOMER_META } from "@/features/shop/roles-model";
@@ -271,6 +277,7 @@ function ArenaApp({
   promptJoin = false,
   initialTab,
   initialSlot,
+  initialService,
   focusWhatsapp = false,
   focusGroup = false,
   focusReservationToken,
@@ -281,6 +288,7 @@ function ArenaApp({
   accessNotice?: AccessNotice;
   /** Horário tocado na página pública (dia AAAA-MM-DD e HH:MM no fuso da loja): só pré-escolhe. */
   initialSlot?: { day: string; time: string };
+  initialService?: string;
   /** Conta aberta pelo link "Número errado?": leva ao cartão do WhatsApp. */
   focusWhatsapp?: boolean;
   focusGroup?: boolean;
@@ -339,6 +347,7 @@ function ArenaApp({
   const [serviceIdx, setServiceIdx] = useState(0);
   // Veio de um horário tocado na página pública: o serviço sugerido é o mais curto do profissional.
   const fromPublicSlot = useRef(Boolean(initialSlot));
+  const servicoInicialIndisponivel = useRef(false);
   // Horário do link que não dá para manter (dia que já passou ou fora do prazo de agendamento).
   const [pickedSlotLost, setPickedSlotLost] = useState<"past" | "far" | null>(null);
   const [staffIdx, setStaffIdx] = useState(0);
@@ -657,7 +666,13 @@ function ArenaApp({
   const initialSlotIso = useRef<string | null>(null);
   useEffect(() => {
     const identity = demo ? "demo" : shopId ? `${shopId}:${shopTimeZone}` : null;
-    if (!initialSlot || !identity || initialSlotFor.current === identity) return;
+    if (
+      servicoInicialIndisponivel.current ||
+      !initialSlot ||
+      !identity ||
+      initialSlotFor.current === identity
+    )
+      return;
     initialSlotFor.current = identity;
     const keys = buildBookingDateKeys(
       demo?.now ?? new Date(),
@@ -894,7 +909,9 @@ function ArenaApp({
       setDirectShopMissing(false);
       setDirectLinkBroken(false);
       try {
-        const profile = await (contaNaPlataforma ? getSessionProfile() : getCustomerSessionProfile());
+        const profile = await (contaNaPlataforma
+          ? getSessionProfile()
+          : getCustomerSessionProfile());
         if (!cancelled) {
           setCustomerName(profile?.profile?.full_name?.trim() || "");
           setAccount(profile);
@@ -932,8 +949,13 @@ function ArenaApp({
               catalogShopId = info.shop_id;
               if (!cancelled && info.shop_name) setShopName(info.shop_name);
             } else {
-              const team = await supabase.from("shop_members").select("id").eq("barbershop_id", info.shop_id)
-                .eq("user_id", profile.user.id).eq("active", true).limit(1);
+              const team = await supabase
+                .from("shop_members")
+                .select("id")
+                .eq("barbershop_id", info.shop_id)
+                .eq("user_id", profile.user.id)
+                .eq("active", true)
+                .limit(1);
               if (team.error) throw team.error;
               if (!cancelled) setJoinOwnTeam(Boolean(team.data?.length));
               pendingJoinRef = info.shop_slug || directShopSlug;
@@ -1182,11 +1204,25 @@ function ArenaApp({
             setFavoriteStaffId(favoriteId);
           }
 
-          setServiceIdx(
-            directStaffId && fromPublicSlot.current
-              ? shortestServiceIndex(availableServices, terms, directStaffId)
-              : 0,
-          );
+          if (initialService && noPiloto() && catalogShopId === lojaPiloto.id) {
+            const indice = availableServices.findIndex((s) => s.id === initialService);
+            const escolhido = availableServices[indice];
+            const corresponde =
+              escolhido && directStaffId && termsFor(terms, directStaffId, escolhido);
+            setServiceIdx(corresponde ? indice : 0);
+            servicoInicialIndisponivel.current = !corresponde;
+            if (!corresponde) {
+              initialSlotIso.current = null;
+              setSelectedSlotAt(null);
+              setBookingError(tNow("fix.cliente-app.rescheduleUnavailable"));
+            }
+          } else {
+            setServiceIdx(
+              directStaffId && fromPublicSlot.current
+                ? shortestServiceIndex(availableServices, terms, directStaffId)
+                : 0,
+            );
+          }
           if (directStaffId) {
             setAnyAvailable(false);
             setStaffIdx(
@@ -1212,13 +1248,24 @@ function ArenaApp({
           setCatalogError(friendlyAuthError(err, tNow("cust.catalogLoadError")));
         }
       } finally {
-        if (!cancelled) { setPrimeiraCargaPronta(true); setCatalogLoading(false); }
+        if (!cancelled) {
+          setPrimeiraCargaPronta(true);
+          setCatalogLoading(false);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [demoShopId, directBarberSlug, directShopSlug, promptJoin, catalogRevision, contaNaPlataforma]);
+  }, [
+    demoShopId,
+    directBarberSlug,
+    directShopSlug,
+    initialService,
+    promptJoin,
+    catalogRevision,
+    contaNaPlataforma,
+  ]);
 
   async function confirmShopJoin() {
     if (!joinShopRef) return;
@@ -2723,7 +2770,16 @@ function ArenaApp({
       cancelAnimationFrame(frame);
     };
     // O modo de cantos (raio da pílula) pode chegar depois da primeira medida, sem mudar tamanho.
-  }, [primeiraCargaPronta, shopId, nomeHorarios, activeNavIndex, navItems.length, navLevel, isPhone, shopSettings.corner_style]);
+  }, [
+    primeiraCargaPronta,
+    shopId,
+    nomeHorarios,
+    activeNavIndex,
+    navItems.length,
+    navLevel,
+    isPhone,
+    shopSettings.corner_style,
+  ]);
   const brandStyle = brandVariables(
     shopSettings.primary_color,
     shopSettings.accent_color,
@@ -3018,7 +3074,12 @@ function ArenaApp({
                   : undefined
               }
             >
-              <SeloBarbearia lojaId={shopId} tema={shopSettings} nome={shopSettings.display_name?.trim() || shopName || ""} tamanho={44} />
+              <SeloBarbearia
+                lojaId={shopId}
+                tema={shopSettings}
+                nome={shopSettings.display_name?.trim() || shopName || ""}
+                tamanho={44}
+              />
             </span>
           )}
           {/* Container: as linhas do nome e o slogan dependem do espaço que sobra ao lado dos
@@ -3342,7 +3403,7 @@ function ArenaApp({
               ) : bookingDone ? (
                 <div className="mx-auto max-w-xl">
                   <BookingDone
-                          variosHorarios={variosHorarios}
+                    variosHorarios={variosHorarios}
                     title={
                       bookingDone.rescheduled ? t("booking.rescheduled") : t("booking.reserved")
                     }
@@ -3364,6 +3425,7 @@ function ArenaApp({
                       scrollToStep("booking-step-service");
                     }}
                   />
+                  {outsideDemo && noPiloto() && shopId === lojaPiloto.id && <AtivarChave />}
                 </div>
               ) : (
                 <div className="customer-booking-layout grid grid-cols-[minmax(0,1fr)] items-start gap-4 tablet:gap-6 pc:grid-cols-[minmax(0,1fr)_20rem]">

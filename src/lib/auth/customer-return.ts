@@ -5,7 +5,8 @@ export function customerAuthReturn(path: string, shopRef?: string | null): strin
   const previous = url.searchParams.get("shop");
   if (previous && previous !== shopRef) {
     // Horário/profissional da loja anterior não podem acompanhar a troca.
-    for (const key of ["barber", "at", "service", "staff"]) url.searchParams.delete(key);
+    for (const key of ["barber", "at", "service", "staff", "day", "time", "reserva", "focus"])
+      url.searchParams.delete(key);
   }
   url.searchParams.set("shop", shopRef);
   url.searchParams.set("join", "1");

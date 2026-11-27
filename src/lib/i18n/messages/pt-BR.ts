@@ -1,5 +1,17 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "rapido.continuar": "Continuar",
+  "rapido.chaveAlternativa": "Você pode tentar de novo ou entrar por e-mail ou Google.",
+  "rapido.chaveEntrar": "Entrar com chave de acesso",
+  "rapido.enviado": "Se o e-mail {email} já tiver cadastro, o código chegará por lá.",
+  "rapido.codigo": "Código do e-mail",
+  "rapido.emailEntrar": "Receber código por e-mail",
+  "rapido.reenviar": "Reenviar código",
+  "rapido.trocar": "Trocar e-mail",
+  "rapido.senha": "Entrar com senha",
+  "rapido.chaveAtiva": "Chave de acesso ativada.",
+  "rapido.chaveAtivar": "Ativar chave para o próximo agendamento",
+  "rapido.chaveAdiada": "Você pode ativar a chave em outra ocasião.",
   "receipt.title": "Avisos ao cliente",
   "receipt.error": "Não foi possível consultar os avisos.",
   "receipt.loading": "Consultando avisos…",
@@ -2961,7 +2973,8 @@ export const ptBR = {
   "manager.loadFailed": "Não foi possível carregar seus estabelecimentos.",
   "manager.noShops": "Você ainda não tem estabelecimentos atribuídos.",
   "manager.requestFailed": "Não foi possível confirmar o envio do pedido.",
-  "plat.mgr.assignmentScope": "Pode gerenciar a equipe e as permissões deste estabelecimento. As alterações visuais precisam da aprovação dos donos.",
+  "plat.mgr.assignmentScope":
+    "Pode gerenciar a equipe e as permissões deste estabelecimento. As alterações visuais precisam da aprovação dos donos.",
   "area.platformTitle": "Todos os estabelecimentos",
   "area.customer": "Cliente",
   "area.customerTitle": "Agendar como cliente",

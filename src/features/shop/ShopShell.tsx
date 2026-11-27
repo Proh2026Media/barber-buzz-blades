@@ -93,14 +93,12 @@ import { MyProfileCard } from "./settings/MyProfileCard";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
-  ArrowUpRight,
   Calendar,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Globe2,
   KeyRound,
   Hourglass,
   Lightbulb,
@@ -276,19 +274,19 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
   // em que a pessoa está, a escolha salva no aparelho (por conta) ou, com 2 ou mais lojas e
   // nenhuma escolha, a pergunta "Em qual barbearia…?". Na demonstração não lê nem grava nada.
   const [initialEntry] = useState<ShopEntry>(() =>
-    managedShop ? { step: "ready", selected: null } : initialShopEntry({
-      actors: profile.shopActors,
-      requested: demo ? null : readRequestedShop(),
-      saved: demo ? null : readSavedShopActor(profile.user.id),
-      onShopHost: !demo && !isPlatformApexHost(),
-      demo: Boolean(demo),
-    }),
+    managedShop
+      ? { step: "ready", selected: null }
+      : initialShopEntry({
+          actors: profile.shopActors,
+          requested: demo ? null : readRequestedShop(),
+          saved: demo ? null : readSavedShopActor(profile.user.id),
+          onShopHost: !demo && !isPlatformApexHost(),
+          demo: Boolean(demo),
+        }),
   );
   const [selectedActorId, setSelectedActorId] = useState(initialEntry.selected);
   const [entryStep, setEntryStep] = useState(initialEntry.step);
   const pendingEntry = entryStep !== "ready";
-  // Domínio de uma barbearia em que a pessoa não trabalha: avisa e oferece o endereço certo.
-  const [foreignHost, setForeignHost] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
     if (demo || managedShop) return;
     if (isPlatformApexHost()) return;
@@ -307,13 +305,6 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
     void resolveShopFromCurrentHost()
       .then((resolved) => {
         if (!active) return;
-        if (
-          resolved &&
-          profile.shopActors.length > 0 &&
-          !profile.shopActors.some((candidate) => candidate.barbershop_id === resolved.shop_id)
-        ) {
-          setForeignHost({ id: resolved.shop_id, name: resolved.shop_name });
-        }
         decide(resolved?.shop_id ?? null);
       })
       .catch(() => decide(null));
@@ -520,16 +511,17 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
   // "esperam o OK de Ana", como no real).
   const accessCapabilities = capabilities;
   // Barbearias de quem está logado, com o papel em cada uma (troca pelo nome no cabeçalho).
-  const shopChoices = demo || managedShop
-    ? []
-    : profile.shopActors.map((candidate) => ({
-        id: candidate.id,
-        name: candidate.barbershop?.name ?? t("shop.header.shopName"),
-        role: candidate.role,
-        percent: candidate.ownership_percent,
-      }));
+  const shopChoices =
+    demo || managedShop
+      ? []
+      : profile.shopActors.map((candidate) => ({
+          id: candidate.id,
+          name: candidate.barbershop?.name ?? t("shop.header.shopName"),
+          role: candidate.role,
+          percent: candidate.ownership_percent,
+        }));
   // "Minhas áreas" no menu da conta e a última área usada neste aparelho (fora da demonstração).
-  const myAreas = useMyAreas(demo ? null : profile);
+  const myAreas = useMyAreas(demo || !isPlatformApexHost() ? null : profile);
   useRememberArea(!managedShop && !demo && acting.kind !== "none" ? viewerId : null, "shop");
   const waiting = useWaiting(shop?.id, true);
   const [loading, setLoading] = useState(true);
@@ -890,7 +882,7 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
       demo.exit();
       return;
     }
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: isPlatformApexHost() ? "global" : "local" });
     window.location.href = "/auth";
   }
 
@@ -1854,7 +1846,8 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
   }
   const teamSectionOpen = settingsSections.includes("equipe");
   // "Ver pedido" (Serviços/Equipe/Horários): leva direto às decisões entre donos.
-  const openApprovals = teamSectionOpen && !managedShop ? () => openTeamSection("team-decisions") : undefined;
+  const openApprovals =
+    teamSectionOpen && !managedShop ? () => openTeamSection("team-decisions") : undefined;
   // Pessoas e papéis, convites e permissões (dono/sócio). Com nome: abre o convite já preenchido.
   const openTeamAccess =
     teamSectionOpen && powers.society
@@ -2019,39 +2012,56 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
             ) : (
               <>
                 <div className="flex min-w-0 items-center gap-2">
-                  {shop && (settings?.logo_url ? (
-                    <span className="quadro-logo-loja size-8"><img src={settings.logo_url} alt="" /></span>
-                  ) : (
-                    <SeloBarbearia lojaId={shop.id} tema={settings} nome={settings?.display_name || shop.name} tamanho={32} />
-                  ))}
-                <ShopSwitcher
-                  name={settings?.display_name || shop?.name || t("shop.header.shopFallback")}
-                  shops={shopChoices}
-                  currentId={actor?.id ?? ""}
-                  onSwitch={switchShop}
-                />
+                  {shop &&
+                    (settings?.logo_url ? (
+                      <span className="quadro-logo-loja size-8">
+                        <img src={settings.logo_url} alt="" />
+                      </span>
+                    ) : (
+                      <SeloBarbearia
+                        lojaId={shop.id}
+                        tema={settings}
+                        nome={settings?.display_name || shop.name}
+                        tamanho={32}
+                      />
+                    ))}
+                  <ShopSwitcher
+                    name={settings?.display_name || shop?.name || t("shop.header.shopFallback")}
+                    shops={shopChoices}
+                    currentId={actor?.id ?? ""}
+                    onSwitch={switchShop}
+                  />
                 </div>
                 {/* Selo do papel tocável ("Dono · 50%" + modo da sociedade): abre "Seu acesso".
                     shop_admin antigo: dono legítimo da loja que abriu (antes da equipe existir). */}
                 {managedShop ? (
-                  <a className="inline-flex min-h-11 items-center gap-1 rounded-[var(--button-radius)] px-2 text-sm" href="/platform?aba=barbearias">
-                    <ArrowLeft className="size-4" aria-hidden /> {t(PLATFORM_META.label)}
-                  </a>
-                ) : <RoleAccessButton
-                  role={actor?.role ?? "owner"}
-                  percent={actor?.ownership_percent}
-                  mode={governanceMode}
-                  capabilities={actor ? accessCapabilities : null}
-                  approvers={approvers}
-                  onOpenTeam={
-                    settingsSections.includes("equipe")
-                      ? // Dono/sócio: decisões da sociedade; demais papéis: "Seu acesso" e a saída.
-                        () =>
-                          openTeamSection(isOwnerRole(actor?.role) ? "team-decisions" : "team-mine")
-                      : undefined
-                  }
-                  className="mt-0.5"
-                />}
+                  isPlatformApexHost() && (
+                    <a
+                      className="inline-flex min-h-11 items-center gap-1 rounded-[var(--button-radius)] px-2 text-sm"
+                      href="/platform?aba=barbearias"
+                    >
+                      <ArrowLeft className="size-4" aria-hidden /> {t(PLATFORM_META.label)}
+                    </a>
+                  )
+                ) : (
+                  <RoleAccessButton
+                    role={actor?.role ?? "owner"}
+                    percent={actor?.ownership_percent}
+                    mode={governanceMode}
+                    capabilities={actor ? accessCapabilities : null}
+                    approvers={approvers}
+                    onOpenTeam={
+                      settingsSections.includes("equipe")
+                        ? // Dono/sócio: decisões da sociedade; demais papéis: "Seu acesso" e a saída.
+                          () =>
+                            openTeamSection(
+                              isOwnerRole(actor?.role) ? "team-decisions" : "team-mine",
+                            )
+                        : undefined
+                    }
+                    className="mt-0.5"
+                  />
+                )}
               </>
             )}
           </div>
@@ -2099,29 +2109,6 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
         <PwaInstallBanner />
         <ApprovalNoteContext.Provider value={approvalNote}>
           <div key={tab} className="mb-panel space-y-6">
-            {/* Domínio de outra barbearia: diz onde a pessoa está e leva ao endereço da loja dela. */}
-            {foreignHost && shop && shop.id !== foreignHost.id && (
-              <Notice
-                tone="info"
-                icon={Globe2}
-                title={t("shop.host.otherShop", { host: foreignHost.name, shop: shop.name })}
-                action={{
-                  label: t("shop.host.openRight", { shop: shop.name }),
-                  icon: ArrowUpRight,
-                  onClick: () =>
-                    window.location.assign(
-                      `${shopPublicOrigin({
-                        slug: shop.slug,
-                        customDomain: shop.custom_domain,
-                        customDomainStatus: shop.custom_domain_status,
-                      })}/shop`,
-                    ),
-                }}
-                onDismiss={() => setForeignHost(null)}
-              >
-                {t("shop.host.relogin")}
-              </Notice>
-            )}
             {/* Entrada: a loja do domínio ainda está sendo conferida. */}
             {entryStep === "host" && (
               <LoadingState variant="cards" count={2} label={t("shop.entry.opening")} />
@@ -2593,7 +2580,10 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
                     const shopLink = (withDomainShortcut: boolean) => {
                       const landing = parseLandingConfig(settings.landing);
                       return (
-                        <ShopLinkCard accent={settings.accent_color} lojaId={shop.id} nome={settings.display_name || shop.name}
+                        <ShopLinkCard
+                          accent={settings.accent_color}
+                          lojaId={shop.id}
+                          nome={settings.display_name || shop.name}
                           publicUrl={shopPublicOrigin({
                             slug: shop.slug,
                             customDomain: shop.custom_domain,
@@ -2754,7 +2744,11 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
                           {(canManageShopChannels || powers.googleOwn) && (
                             <GoogleConnectionCard
                               shopId={shop.id}
-                              returnPath={managedShop ? `/shop?gestao=${managedShop.id}&secao=avisos` : "/shop?secao=avisos"}
+                              returnPath={
+                                managedShop
+                                  ? `/shop?gestao=${managedShop.id}&secao=avisos`
+                                  : "/shop?secao=avisos"
+                              }
                               canCopyWholeShop={powers.googleWholeShop}
                             />
                           )}
@@ -2802,9 +2796,18 @@ export function ShopShell({ profile, headerActions, managedShop }: ShopShellProp
                     if (section === "equipe" && managedShop) {
                       return (
                         <TeamInviteContext.Provider value={teamInviteContext}>
-                          <ShopTeamAccessCard shopId={shop.id} canApplyProtected canEditSociety
-                            staff={staff} currentUserId={viewerId} timeZone={shopTimeZone}
-                            onChanged={() => { setGovernanceRevision((v) => v + 1); void loadCatalog(); }} />
+                          <ShopTeamAccessCard
+                            shopId={shop.id}
+                            canApplyProtected
+                            canEditSociety
+                            staff={staff}
+                            currentUserId={viewerId}
+                            timeZone={shopTimeZone}
+                            onChanged={() => {
+                              setGovernanceRevision((v) => v + 1);
+                              void loadCatalog();
+                            }}
+                          />
                         </TeamInviteContext.Provider>
                       );
                     }

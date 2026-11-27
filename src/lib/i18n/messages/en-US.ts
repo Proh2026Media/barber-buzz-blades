@@ -1,6 +1,18 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "rapido.continuar": "Continue",
+  "rapido.chaveAlternativa": "Try again or sign in with email or Google.",
+  "rapido.chaveEntrar": "Sign in with a passkey",
+  "rapido.enviado": "If {email} is registered, you'll receive a code there.",
+  "rapido.codigo": "Email code",
+  "rapido.emailEntrar": "Email me a code",
+  "rapido.reenviar": "Resend code",
+  "rapido.trocar": "Change email",
+  "rapido.senha": "Use password",
+  "rapido.chaveAtiva": "Passkey enabled.",
+  "rapido.chaveAtivar": "Set up a passkey for next time",
+  "rapido.chaveAdiada": "You can set up a passkey another time.",
   "receipt.title": "Customer notifications",
   "receipt.error": "Notifications could not be loaded.",
   "receipt.loading": "Loading notifications…",
@@ -2952,7 +2964,8 @@ export const enUS: Record<MessageKey, string> = {
   "manager.loadFailed": "Your businesses could not be loaded.",
   "manager.noShops": "You have no assigned businesses yet.",
   "manager.requestFailed": "Your request could not be confirmed.",
-  "plat.mgr.assignmentScope": "Can manage this business’s team and permissions. Visual changes require owner approval.",
+  "plat.mgr.assignmentScope":
+    "Can manage this business’s team and permissions. Visual changes require owner approval.",
   "area.platformTitle": "All businesses",
   "area.customer": "Customer",
   "area.customerTitle": "Book as a customer",

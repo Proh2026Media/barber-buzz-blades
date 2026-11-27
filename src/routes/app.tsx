@@ -1,9 +1,11 @@
+import { AgendamentoPublicoPiloto } from "@/features/customer/AgendamentoPublicoPiloto";
+import { noPiloto } from "@/lib/auth/piloto-agendamento";
 import { Abertura } from "@/components/Abertura";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArenaApp } from "@/features/customer/ArenaApp";
 import { supabase } from "@/integrations/supabase/client";
-import { parseAccessNotice } from "@/lib/auth/destination";
+import { idLojaGerenciada, parseAccessNotice } from "@/lib/auth/destination";
 import {
   isPlatformApexHost,
   platformSubdomainUrl,
@@ -27,6 +29,9 @@ function initialTabFor(tab: string | undefined, hasSlot: boolean) {
 export const Route = createFileRoute("/app")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
+    ...(typeof search.service === "string" && idLojaGerenciada(search.service)
+      ? { service: search.service }
+      : {}),
     barber: typeof search.barber === "string" ? search.barber : undefined,
     shop: typeof search.shop === "string" ? search.shop : undefined,
     join: search.join === "1" || search.join === true || search.join === "true" ? true : undefined,
@@ -47,14 +52,36 @@ export const Route = createFileRoute("/app")({
     const searchStr =
       typeof location.searchStr === "string" && location.searchStr ? location.searchStr : "";
     if (!(await supabase.auth.getSession()).data.session) {
+      if (
+        noPiloto() &&
+        (!search.tab || ["agenda", "agendar"].includes(search.tab)) &&
+        !search.reserva &&
+        !search.focus &&
+        !search.aviso
+      )
+        return { visitante: true };
       throw redirect({ to: "/auth", search: { next: `/app${searchStr}` } });
     }
+    if (!isPlatformApexHost()) {
+      const { data: admin, error } = await supabase.rpc("is_platform_admin", {});
+      if (error) throw error;
+      if (admin === true) throw redirect({ to: "/shop", replace: true });
+    }
+    return { visitante: false };
   },
   component: AppRoute,
 });
 
 function AppRoute() {
-  const { barber, shop, join, tab, reserva, day, time, focus, aviso } = Route.useSearch();
+  const { visitante } = Route.useRouteContext();
+  const search = Route.useSearch();
+  if (visitante)
+    return <AgendamentoPublicoPiloto barber={search.barber} day={search.day} time={search.time} />;
+  return <AppAutenticado />;
+}
+
+function AppAutenticado() {
+  const { barber, shop, join, tab, reserva, day, time, focus, aviso, service } = Route.useSearch();
   const { t } = useI18n();
   const [hostShop, setHostShop] = useState<string | undefined>(undefined);
   const [ready, setReady] = useState(false);
@@ -81,7 +108,9 @@ function AppRoute() {
       if (maybeRedirectToCanonical(resolved)) return;
       if (resolved?.shop_slug) setHostShop(resolved.shop_slug);
       setReady(true);
-    })().catch(() => { if (!cancelled) setReady(true); });
+    })().catch(() => {
+      if (!cancelled) setReady(true);
+    });
     return () => {
       cancelled = true;
     };
@@ -93,18 +122,20 @@ function AppRoute() {
   }
 
   const effectiveShop = hostShop || (isPlatformApexHost() ? shop : undefined);
+  const daLoja = !hostShop || !shop || shop === hostShop;
 
   return (
     <ArenaApp
       key={effectiveShop ?? "sem-loja"}
-      directBarberSlug={barber}
+      directBarberSlug={daLoja ? barber : undefined}
       directShopSlug={effectiveShop}
       promptJoin={Boolean(join)}
       initialTab={initialTabFor(tab, Boolean(day && time))}
-      initialSlot={day && time ? { day, time } : undefined}
+      initialService={daLoja && noPiloto() ? service : undefined}
+      initialSlot={daLoja && day && time ? { day, time } : undefined}
       focusWhatsapp={focus === "whatsapp"}
       focusGroup={focus === "grupo"}
-      focusReservationToken={reserva}
+      focusReservationToken={daLoja ? reserva : undefined}
       accessNotice={aviso}
     />
   );

@@ -90,6 +90,14 @@ const OUTSIDE_DEMO = new Map<string, string>([
     "features/shop/hours/WeeklyBreaksCard.tsx",
     "Horários: o painel só passa a pausa fixa fora da demonstração",
   ],
+  [
+    "features/auth/AcessoRapido.tsx",
+    "Autenticação real da Loja Teste B. Oferta de chave protegida por outsideDemo",
+  ],
+  [
+    "features/customer/AgendamentoPublicoPiloto.tsx",
+    "Somente /app para visitante na origem da Loja Teste B",
+  ],
   ["features/auth/ChangePasswordCard.tsx", "Ajustes → Conta só fora da demonstração"],
   ["features/customer/AskShopLink.tsx", "rota /app: só sem barbearia (a demonstração tem loja)"],
   ["features/customer/NamePrompt.tsx", "rota /app"],
@@ -124,7 +132,10 @@ const DEMO_BY_PROP = new Map<string, RegExp>([
   ["features/auth/PasswordChangeGate.tsx", /if \(disabled\) return/],
   ["features/customer/NamePrompt.tsx", /if \(disabled\) return/],
   ["features/customer/WhatsappConfirmBanner.tsx", /if \(disabled\) return/],
-  ["features/customer/WhatsappProfileCard.tsx", /if \(demo\)/],
+  [
+    "features/customer/WhatsappProfileCard.tsx",
+    /if \(!userId \|\| busy \|\| disabled \|\| demo\) return/,
+  ],
   ["features/customer/booking/useClosedWeekdays.ts", /if \(demoHours\)/],
   ["features/demo/DemoWorkspace.tsx", /useDemoNetworkGuard\(\);/],
   ["features/legal/TermsUpdateGate.tsx", /if \(disabled\) return/],

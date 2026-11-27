@@ -1,3 +1,4 @@
+import { isPlatformApexHost } from "@/lib/shop/host";
 import { useRef, type RefObject } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { KeyRound, LogOut } from "lucide-react";
@@ -47,7 +48,7 @@ function PasswordPrompt({
 
   async function signOut() {
     if (currentSession.current?.user.id !== userId) return;
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: isPlatformApexHost() ? "global" : "local" });
     if (!currentSession.current || currentSession.current.user.id === userId) {
       window.location.assign("/auth");
     }

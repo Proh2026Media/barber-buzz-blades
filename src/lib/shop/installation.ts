@@ -23,7 +23,8 @@ export async function nomeDaInstalacao(host: string): Promise<string> {
 /** Identidade pública da instalação. A loja é resolvida exclusivamente pelo domínio. */
 export async function shopIdentity(url: URL): Promise<Response> {
   const apple = url.pathname === "/apple-touch-icon.png";
-  const icon = apple || url.pathname === "/identidade/icone";
+  const marca = url.pathname === "/identidade/marca";
+  const icon = marca || apple || url.pathname === "/identidade/icone";
   const pedido = Number(url.searchParams.get("tamanho"));
   const tamanho = apple ? 180 : [32, 192, 512].includes(pedido) ? pedido : 192;
   const mascaravel = !apple && url.searchParams.get("mascara") === "1";
@@ -36,7 +37,7 @@ export async function shopIdentity(url: URL): Promise<Response> {
       headers: {
         Location: !icon
           ? "/manifest.webmanifest"
-          : tamanho === 32
+          : marca || tamanho === 32
             ? "/favicon.svg"
             : `/icons/icon-${tamanho}${mascaravel ? "-maskable" : ""}.png`,
       },
@@ -70,6 +71,11 @@ export async function shopIdentity(url: URL): Promise<Response> {
       origemPermitida.has(origemLogo.origin) &&
       origemLogo.pathname.startsWith("/storage/v1/object/public/barbershop-logos/")
     ) {
+      if (marca)
+        return new Response(null, {
+          status: 302,
+          headers: { Location: origemLogo.href, "Cache-Control": "private, max-age=60" },
+        });
       const arquivo = await fetch(origemLogo, {
         redirect: "error",
         signal: AbortSignal.timeout(5000),

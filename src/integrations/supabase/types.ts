@@ -1634,6 +1634,10 @@ export type Database = {
           accent_color: string | null;
         }[];
       };
+      consultar_agenda_piloto: {
+        Args: { p_servico?: string; p_profissional?: string; p_dia?: string };
+        Returns: Json;
+      };
       get_public_shop_landing: {
         Args: { p_shop_ref?: string | null; p_host?: string | null };
         Returns: Json;
@@ -1667,7 +1671,7 @@ export type Database = {
       get_client_profile_with_contact: {
         Args: { p_shop_id: string; p_customer_id: string };
         Returns: Json;
-      }
+      };
       get_client_profile: {
         Args: { p_shop_id: string; p_customer_id: string };
         Returns: Json;
@@ -1693,7 +1697,17 @@ export type Database = {
         Returns: Json;
       };
       cancel_appointment: { Args: { p_id: string; p_reason?: string | null }; Returns: undefined };
-      appointment_notice_history: { Args: { p_appointment: string }; Returns: { channel: string; kind: string; state: string; created_at: string; sent_at: string | null; opened_at: string | null }[] };
+      appointment_notice_history: {
+        Args: { p_appointment: string };
+        Returns: {
+          channel: string;
+          kind: string;
+          state: string;
+          created_at: string;
+          sent_at: string | null;
+          opened_at: string | null;
+        }[];
+      };
       get_my_shop_cancellations: { Args: { p_shop_id: string }; Returns: Json };
       get_appointment_cancellations: { Args: { p_shop_id?: string | null }; Returns: Json };
       export_my_data: { Args: Record<string, never>; Returns: Json };
@@ -2041,7 +2055,10 @@ export type Database = {
       };
       list_managed_brand_shops: {
         Args: Record<string, never>;
-        Returns: Pick<Database["public"]["Tables"]["barbershops"]["Row"], "id" | "name" | "slug" | "timezone" | "custom_domain" | "custom_domain_status">[];
+        Returns: Pick<
+          Database["public"]["Tables"]["barbershops"]["Row"],
+          "id" | "name" | "slug" | "timezone" | "custom_domain" | "custom_domain_status"
+        >[];
       };
       platform_externa_sync_status: {
         Args: { p_shop_id: string };

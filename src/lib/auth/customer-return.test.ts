@@ -3,13 +3,17 @@ import assert from "node:assert/strict";
 import { customerAuthReturn } from "./customer-return.ts";
 test("link de outra barbearia substitui loja lembrada sem carregar horário anterior", () => {
   const url = new URL(
-    customerAuthReturn("/app?shop=antiga&barber=antigo&at=10&service=a", "nova"),
+    customerAuthReturn(
+      "/app?shop=antiga&barber=antigo&at=10&service=a&day=2026-12-01&time=10:30&reserva=de-outra",
+      "nova",
+    ),
     "https://bc.example.invalid",
   );
   assert.equal(url.searchParams.get("shop"), "nova");
   assert.equal(url.searchParams.get("join"), "1");
   assert.equal(url.searchParams.has("barber"), false);
-  assert.equal(url.searchParams.has("at"), false);
+  for (const campo of ["at", "service", "day", "time", "reserva"])
+    assert.equal(url.searchParams.has(campo), false);
 });
 test("mesma loja conserva escolha de agendamento e sem loja conserva destino", () => {
   assert.equal(

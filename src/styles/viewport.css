@@ -140,7 +140,8 @@
 /* No app instalado a tela do cliente ocupa a janela. Só o teclado aberto
    precisa da altura menor informada por visualViewport. */
 @media (display-mode: standalone) and (max-width: 767.98px) {
-  :root:not([data-keyboard-open="true"]) :is(.customer-workspace, .shop-workspace):not(.demo-content *) {
+  :root:not([data-keyboard-open="true"])
+    :is(.customer-workspace, .shop-workspace):not(.demo-content *) {
     position: fixed;
     inset: 0;
     height: auto;
@@ -206,21 +207,40 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  .arena-workspace[data-conteudo-sob-menu] > header::before {
+  .arena-workspace > header::before {
+    opacity: 0;
     content: "";
     position: absolute;
     z-index: -1;
     inset: 0 0 -0.75rem;
     pointer-events: none;
-    background: linear-gradient(to bottom, color-mix(in srgb, var(--background) 58%, transparent), color-mix(in srgb, var(--background) 75%, transparent) 55%, color-mix(in srgb, var(--background) 58%, transparent) 78%, transparent);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--background) 58%, transparent),
+      color-mix(in srgb, var(--background) 75%, transparent) 55%,
+      color-mix(in srgb, var(--background) 58%, transparent) 78%,
+      transparent
+    );
   }
-  .arena-workspace.brand-chrome-floating[data-conteudo-sob-menu] > header::before {
+  .arena-workspace[data-conteudo-sob-menu] > header::before {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .arena-workspace > header::before {
+      transition: opacity var(--dur-ui-rapido) var(--ease-troca);
+    }
+  }
+  .arena-workspace.brand-chrome-floating > header::before {
     inset: 0;
     border-radius: inherit;
     background: color-mix(in srgb, var(--card) 80%, transparent);
   }
   @media (prefers-reduced-transparency: reduce) {
-    .arena-workspace[data-conteudo-sob-menu] > header::before { inset: 0; background: var(--card); }
+    .arena-workspace > header::before,
+    .arena-workspace.brand-chrome-floating > header::before {
+      inset: 0;
+      background: var(--card);
+    }
   }
 }
 
@@ -236,8 +256,11 @@
   }
 }
 @media (display-mode: standalone) and (orientation: portrait) and (max-width: 767.98px) {
-  :root[data-sistema="apple"]:not([data-keyboard-open="true"]):has(.arena-workspace:not(.demo-content *)),
-  :root[data-sistema="apple"]:not([data-keyboard-open="true"]) body:has(.arena-workspace:not(.demo-content *)) {
+  :root[data-sistema="apple"]:not([data-keyboard-open="true"]):has(
+      .arena-workspace:not(.demo-content *)
+    ),
+  :root[data-sistema="apple"]:not([data-keyboard-open="true"])
+    body:has(.arena-workspace:not(.demo-content *)) {
     height: 100lvh;
     min-height: 100lvh;
     overflow: hidden;
@@ -249,7 +272,8 @@
     height: 100lvh;
   }
   :root[data-sistema="apple"]:not([data-keyboard-open="true"])
-    .arena-workspace:not(.demo-content *) > .app-mobile-nav {
+    .arena-workspace:not(.demo-content *)
+    > .app-mobile-nav {
     position: absolute;
   }
 }
@@ -264,8 +288,55 @@
   background: #fafafa;
   color: #343434;
 }
-.dark .abertura-contexto { background: #191919; color: #ededed; }
-.abertura-contexto button { border: 1px solid currentColor; border-radius: var(--button-radius); padding: .65rem 1.25rem; }
-.entrada-espera { display: none; }
-[data-resolver-entrada] .entrada-pendente > .entrada-publica { display: none; }
-[data-resolver-entrada] .entrada-pendente > .entrada-espera { display: block; }
+.abertura-marca img {
+  display: block;
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .abertura-marca {
+    animation: entrada-da-marca 380ms var(--ease-entrada) both;
+  }
+  .abertura-marca img {
+    animation: pulso-da-marca 1700ms ease-in-out 380ms infinite alternate;
+  }
+  @keyframes entrada-da-marca {
+    from {
+      opacity: 0;
+      filter: blur(5px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+  @keyframes pulso-da-marca {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0.7;
+      transform: scale(0.96);
+    }
+  }
+}
+.dark .abertura-contexto {
+  background: #191919;
+  color: #ededed;
+}
+.abertura-contexto button {
+  border: 1px solid currentColor;
+  border-radius: var(--button-radius);
+  padding: 0.65rem 1.25rem;
+}
+.entrada-espera {
+  display: none;
+}
+[data-resolver-entrada] .entrada-pendente > .entrada-publica {
+  display: none;
+}
+[data-resolver-entrada] .entrada-pendente > .entrada-espera {
+  display: block;
+}

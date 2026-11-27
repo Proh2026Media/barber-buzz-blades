@@ -1,5 +1,9 @@
 # Pendências — lista única e priorizada
 
+**Piloto de acesso rápido em 27/11/2026.** Validar em iPhone real a ativação da chave depois da reserva e um segundo acesso pelo link da Loja Teste B. A ampliação depende de configurar e validar a origem de cada estabelecimento.
+
+**Feito em 27/11/2026.** Entrada do administrador global na gestão pelo link da loja e transição do fundo do cabeçalho móvel ao rolar e ao voltar ao topo.
+
 Feito em 27/11/2026. Corrigido o vão sob o rodapé no PWA instalado em iPhone.
 
 Feito em 27/11/2026. Aplicada à navegação a regra de cantos internos do kit Aurset. A área da barbearia acompanha o cliente nos três formatos de canto.

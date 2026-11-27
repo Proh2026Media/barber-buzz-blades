@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect, notFound } from "@tanstack/react-router";
 import { CalendarSearch, UserX, Users } from "lucide-react";
-import { EmptyState, LoadingState } from "@/components/visual";
+import { Abertura } from "@/components/Abertura";
+import { EmptyState } from "@/components/visual";
 import { NotFoundPage } from "@/components/NotFoundPage";
 import { useI18n } from "@/lib/i18n";
 import { resolveShopFromCurrentHost } from "@/lib/shop/host";
@@ -59,27 +60,12 @@ export const Route = createFileRoute("/$barberSlug")({
       },
     });
   },
-  pendingComponent: BarberLinkOpening,
+  pendingComponent: Abertura,
   component: BarberLinkMissing,
   // A 404 desta rota fica nela mesma: a rota é só do navegador (ssr: false), e a 404 da raiz,
   // desenhada já na hidratação, não batia com o HTML do servidor (aviso de hidratação).
   notFoundComponent: NotFoundPage,
 });
-
-function BarberLinkOpening() {
-  const { t } = useI18n();
-  // Indicador + esqueleto no formato da agenda, com o verbo visível.
-  return (
-    <main className="public-page flex min-h-dvh items-center justify-center bg-background px-4">
-      <LoadingState
-        label={t("app.barberLink.opening")}
-        variant="cards"
-        count={2}
-        className="w-full max-w-sm"
-      />
-    </main>
-  );
-}
 
 function BarberLinkMissing() {
   const { t } = useI18n();

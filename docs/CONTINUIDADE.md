@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+27/11/2026 — Agendamento antes do login e chave de acesso na Loja Teste B. O catálogo público entrega opções e horários, e a confirmação da reserva exige sessão. A origem da chave e o retorno do código são exclusivos de `loja-teste-b.aurset.app`. A autenticação usa a conta existente. Pelo link da loja, as consultas de equipe e vínculos usam o estabelecimento resolvido pelo domínio. Abertura com logo da loja e movimento reduzido respeitado. O serviço de autenticação da Aurset passou de 2.186.0 para 2.199.0 após ensaio com conta fictícia e backup do esquema de autenticação. Serviço fictício “Teste de notificações” reativado na loja piloto. A homologação biométrica no aparelho é a etapa anterior à expansão.
+
+27/11/2026 — O administrador global entra na gestão da loja pelo endereço dela, inclusive por um link de profissional. O domínio determina qual loja abrir. O fundo do cabeçalho móvel dos painéis faz uma transição de opacidade nos dois sentidos e respeita a preferência de movimento do aparelho.
+
 27/11/2026 — PWA no iPhone. A área do cliente e da gestão ocupa a altura integral em retrato. O menu mantém 10 px de margem no iPhone testado e a rolagem interna reserva sua altura.
 
 A navegação do cliente e da gestão usa o raio do painel menos o recuo real do item. A gestão passou a usar os mesmos cantos, áreas seguras e acabamento por aparelho da área do cliente. A configuração visual dos estabelecimentos permanece no cadastro existente.

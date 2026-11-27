@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
+import { lojaPiloto, noPiloto } from "@/lib/auth/piloto-agendamento";
 import { Link } from "@tanstack/react-router";
 import {
   CalendarCheck,
@@ -80,11 +81,11 @@ export function BookLink({
     shop: slug,
     barber: barber ?? undefined,
     join: undefined,
-    tab: undefined,
+    tab: slug === lojaPiloto.slug && noPiloto() ? "agendar" : undefined,
     reserva: undefined,
     ...(slot ? { day: slot.day, time: slot.time } : {}),
   };
-  if (signedIn)
+  if (signedIn || (slug === lojaPiloto.slug && noPiloto()))
     return (
       <Link to="/app" search={search} className={className} aria-label={ariaLabel}>
         {children}
@@ -333,7 +334,9 @@ export function SlotPills({
       <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
         <span>{t("shopLanding.todayTitle")}</span>
         {member.min_duration_minutes && (
-          <Tag className="shop-badge" icon={Clock3}>{t("shopLanding.forMinutes", { n: member.min_duration_minutes })}</Tag>
+          <Tag className="shop-badge" icon={Clock3}>
+            {t("shopLanding.forMinutes", { n: member.min_duration_minutes })}
+          </Tag>
         )}
         {/* O toque abre a agenda do profissional; ainda não reserva o horário escolhido. */}
         {!preview && (
@@ -423,7 +426,9 @@ export function ServiceRow({ service, price }: { service: LandingService; price:
         {service.description && (
           <p className="text-xs leading-snug text-muted-foreground">{service.description}</p>
         )}
-        <Tag className="shop-badge" icon={Clock3}>{t("shopLanding.minutes", { n: service.duration_minutes })}</Tag>
+        <Tag className="shop-badge" icon={Clock3}>
+          {t("shopLanding.minutes", { n: service.duration_minutes })}
+        </Tag>
       </div>
       <p className="shrink-0 text-base font-extrabold tabular-nums">{price}</p>
     </li>
@@ -489,7 +494,13 @@ export function WeekHours({
                 })}
               </span>
             ) : (
-              <StatusBadge className="shop-badge" tone="neutral" icon={Moon} size="sm" label={t("shopLanding.closed")} />
+              <StatusBadge
+                className="shop-badge"
+                tone="neutral"
+                icon={Moon}
+                size="sm"
+                label={t("shopLanding.closed")}
+              />
             )}
           </li>
         );
