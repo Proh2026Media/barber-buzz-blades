@@ -1,20 +1,23 @@
 import { useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, CalendarDays, ChevronRight, Clock3, Scissors } from "lucide-react";
+import { ArrowLeft, CalendarDays, ListChecks } from "lucide-react";
 import { PersonAvatar } from "@/components/visual";
+import { SeloBarbearia } from "@/components/SeloBarbearia";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
 import { PublicBrandFontFace } from "@/features/shop/PublicBrandFontFace";
 import { useI18n } from "@/lib/i18n";
 import { brandCornerClass, brandVariables } from "@/lib/shop/branding";
 import { useShopFavicon } from "@/lib/shop/favicon";
+import { CabecalhoVitrine } from "./CabecalhoVitrine";
+import { ServiceRow } from "./ShopLandingParts";
 
-type Pessoa = { slug: string; nome: string; foto: string | null };
 export type PerfilPublico = {
   loja: {
     id: string;
     slug: string;
     nome: string;
     logo: string | null;
+    fundoLogo?: string | null;
     capa: string | null;
     cantos: string | null;
     primaria: string | null;
@@ -24,16 +27,29 @@ export type PerfilPublico = {
     peso: number | null;
     estilo: string | null;
   };
-  profissional: Pessoa & { bio: string | null; capa: string | null };
-  servicos: { id: string; nome: string; minutos: number; centavos: number }[];
+  profissional: {
+    slug: string;
+    nome: string;
+    foto: string | null;
+    bio: string | null;
+    capa: string | null;
+  };
+  servicos: {
+    id: string;
+    nome: string;
+    minutos: number;
+    centavos: number;
+    icone?: string | null;
+    descricao?: string | null;
+  }[];
 };
 
 export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
   const { loja, profissional, servicos } = perfil;
   const { t, intlLocale } = useI18n();
-  const [imagensIndisponiveis, setImagensIndisponiveis] = useState<string[]>([]);
-  const capa = [profissional.capa, loja.capa].find((url): url is string =>
-    Boolean(url && !imagensIndisponiveis.includes(url)),
+  const [falhas, setFalhas] = useState<string[]>([]);
+  const capa = [profissional.capa, loja.capa].find((foto): foto is string =>
+    Boolean(foto && !falhas.includes(foto)),
   );
   const cores = brandVariables(
     loja.primaria,
@@ -44,47 +60,60 @@ export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
     loja.estilo,
     loja.cantos,
   );
-  const busca = {
-    shop: loja.slug,
-    barber: profissional.slug,
-    tab: "agendar",
-    join: undefined,
-    reserva: undefined,
-  };
+  const reserva = { shop: loja.slug, barber: profissional.slug };
   const moeda = new Intl.NumberFormat(intlLocale, { style: "currency", currency: "BRL" });
   useShopFavicon(loja.logo);
   return (
-    <main
+    <div
       className={`shop-landing public-page brand-page perfil-publico min-h-dvh bg-background text-foreground ${brandCornerClass(loja.cantos)}`}
       style={cores as CSSProperties}
       data-tema-loja={cores["--brand-esquema"]}
     >
-      <BrandRootVariables vars={cores} />
+      <BrandRootVariables
+        vars={{ ...cores, "--brand-capa-navegador": cores["--brand-chao-claro"] }}
+      />
       <PublicBrandFontFace shopId={loja.id} url={loja.arquivoFonte} />
-      <div className="perfil-conteudo mx-auto w-full max-w-5xl space-y-4">
-        <Link to="/" className="inline-flex min-h-11 max-w-full items-center gap-2 font-semibold">
-          <ArrowLeft className="size-4 shrink-0" aria-hidden />
-          {loja.logo && <img className="size-7 object-contain" src={loja.logo} alt="" />}
-          <span className="break-words">{loja.nome}</span>
-        </Link>
-        <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,.85fr)]">
-          <section
-            aria-labelledby="nome-profissional"
-            className="public-card perfil-cartao min-w-0 overflow-hidden rounded-[var(--panel-radius)] border border-border bg-card"
+      <CabecalhoVitrine
+        identidade={
+          <Link
+            to="/"
+            className="shop-hero-focus inline-flex min-h-11 min-w-0 items-center gap-2 rounded-[var(--control-radius)] font-semibold"
           >
-            <div className={capa ? "perfil-capa" : "perfil-capa perfil-capa-sem-foto"}>
-              {capa && (
-                <img
-                  src={capa}
-                  alt=""
-                  fetchPriority="high"
-                  onError={() => setImagensIndisponiveis((anteriores) => [...anteriores, capa])}
+            <ArrowLeft className="size-4 shrink-0" aria-hidden />
+            <span
+              className="quadro-logo-loja shop-hero-logo size-9 shrink-0 rounded-[var(--control-radius)]"
+              style={{ backgroundColor: loja.fundoLogo ?? undefined }}
+            >
+              {loja.logo ? (
+                <img src={loja.logo} alt="" />
+              ) : (
+                <SeloBarbearia
+                  nome={loja.nome}
+                  lojaId={loja.id}
+                  tamanho={36}
+                  tema={{ primary_color: loja.primaria, accent_color: loja.destaque }}
                 />
               )}
+            </span>
+            <span className="min-w-0 break-words">{loja.nome}</span>
+          </Link>
+        }
+      >
+        <div className="perfil-hero-conteudo mx-auto grid max-w-3xl items-center gap-4 px-4 pb-6 pt-4 lg:max-w-6xl">
+          {capa && (
+            <div className="perfil-capa">
+              <img
+                src={capa}
+                alt=""
+                fetchPriority="high"
+                onError={() => setFalhas((anteriores) => [...anteriores, capa])}
+              />
             </div>
-            <div className="px-5 pb-6 sm:px-7">
+          )}
+          <div className="perfil-apresentacao min-w-0">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <PersonAvatar
-                className="perfil-retrato"
+                className="perfil-retrato shrink-0"
                 size="xl"
                 name={profissional.nome}
                 src={profissional.foto}
@@ -92,62 +121,58 @@ export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
               />
               <h1
                 id="nome-profissional"
-                className="mt-3 break-words text-3xl font-bold tracking-tight sm:text-4xl"
-                style={{ fontFamily: "var(--brand-font)" }}
+                className="shop-hero-title"
+                style={{
+                  fontFamily: "var(--brand-font)",
+                  fontWeight: "var(--brand-header-font-weight)" as CSSProperties["fontWeight"],
+                  fontStyle: "var(--brand-header-font-style)",
+                }}
               >
                 {profissional.nome}
               </h1>
-              {profissional.bio && (
-                <p className="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-muted-foreground">
-                  {profissional.bio}
-                </p>
-              )}
-              <Link
-                to="/app"
-                search={busca}
-                className="shop-cta mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2"
-              >
-                <CalendarDays aria-hidden className="size-5" />
-                {t("shopLanding.bookWith", { name: profissional.nome })}
-              </Link>
             </div>
-          </section>
-          {servicos.length > 0 && (
-            <section
-              aria-labelledby="servicos-profissional"
-              className="public-card min-w-0 rounded-[var(--panel-radius)] border border-border bg-card p-4"
+            {profissional.bio && (
+              <p className="mt-3 max-w-xl whitespace-pre-line break-words leading-relaxed">
+                {profissional.bio}
+              </p>
+            )}
+            <Link
+              to="/app"
+              search={{ ...reserva, tab: "agendar", join: undefined, reserva: undefined }}
+              className="shop-cta mt-4 w-full sm:w-auto sm:min-w-56"
             >
-              <h2 id="servicos-profissional" className="shop-section-title">
-                <Scissors className="size-5" aria-hidden />
-                {t("shopLanding.servicesTitle")}
-              </h2>
-              <ul className="mt-2 divide-y divide-border">
-                {servicos.map((s) => (
-                  <li key={s.id}>
-                    <Link
-                      to="/app"
-                      search={{ ...busca, service: s.id }}
-                      className="flex min-h-14 items-center gap-3 py-3"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <strong className="block break-words">{s.nome}</strong>
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock3 className="size-3.5" aria-hidden />
-                          {t("team.notice.minutes", { count: s.minutos })}
-                        </span>
-                      </span>
-                      <span className="text-sm font-semibold">
-                        {moeda.format(s.centavos / 100)}
-                      </span>
-                      <ChevronRight className="size-4 shrink-0" aria-hidden />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+              <CalendarDays aria-hidden />
+              {t("shopLanding.bookWith", { name: profissional.nome })}
+            </Link>
+          </div>
         </div>
-      </div>
-    </main>
+      </CabecalhoVitrine>
+      <main className="mx-auto max-w-3xl px-4 py-6 lg:max-w-6xl lg:py-10">
+        {servicos.length > 0 && (
+          <section aria-labelledby="servicos-profissional" className="space-y-3">
+            <h2 id="servicos-profissional" className="shop-section-title">
+              <ListChecks className="size-5 text-[var(--brand-accent-readable)]" aria-hidden />
+              {t("shopLanding.servicesTitle")}
+            </h2>
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {servicos.map((s) => (
+                <ServiceRow
+                  key={s.id}
+                  service={{
+                    name: s.nome,
+                    description: s.descricao ?? "",
+                    icon: s.icone ?? null,
+                    duration_minutes: s.minutos,
+                    price_cents: s.centavos,
+                  }}
+                  price={moeda.format(s.centavos / 100)}
+                  reserva={{ ...reserva, service: s.id }}
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+      </main>
+    </div>
   );
 }

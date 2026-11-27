@@ -1,3 +1,9 @@
+import {
+  ehEmojiDeServico,
+  modeloDaFoto,
+  modeloDoServico,
+  fotoDoModelo,
+} from "../../lib/shop/modelos-servico.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
@@ -161,4 +167,17 @@ test("contact links are built safely", () => {
   assert.equal(whatsappUrl("(11) 99999-0000"), "https://wa.me/5511999990000");
   assert.equal(whatsappUrl("+351 912 345 678"), "https://wa.me/351912345678");
   assert.equal(whatsappUrl("123"), null);
+});
+
+test("fotos de exemplo respeitam o nome, a escolha explícita e os emojis do catálogo", () => {
+  const combo = modeloDoServico("  CABELO + BARBA 💈  ");
+  assert.equal(combo?.id, "cabelo-e-barba");
+  assert.equal(modeloDoServico("Depilação do nariz com cera")?.id, "depilacao-nasal");
+  assert.equal(modeloDoServico("Corte infantil com desenho"), undefined);
+  assert.equal(modeloDoServico("Combo Premium"), undefined);
+  assert.equal(modeloDaFoto("https://barbearia.example/foto.webp"), undefined);
+  assert.ok(combo);
+  assert.equal(modeloDaFoto(fotoDoModelo(combo)), combo);
+  assert.equal(ehEmojiDeServico("👨🏾‍🦱"), true);
+  assert.equal(ehEmojiDeServico("Scissors"), false);
 });

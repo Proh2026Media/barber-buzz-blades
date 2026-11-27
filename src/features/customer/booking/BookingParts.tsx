@@ -44,7 +44,7 @@ import {
   StatusBadge,
   Tag,
 } from "@/components/visual";
-import { ServiceIcon } from "@/components/ui/service-icon";
+import { FotoServico } from "@/components/ui/FotoServico";
 import type { CatalogViewMode } from "@/features/shop/catalog-view-model";
 import {
   dateFromLocalKey,
@@ -245,13 +245,11 @@ export function ServiceChoices<S extends ServicoVisivel>({
         const selected = index === selectedIndex;
         const terms = termsFor(service);
         const icon = (
-          <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold">
-            <ServiceIcon
-              icon={service.icon}
-              className="size-5"
-              imageClassName="size-12 object-cover !rounded-none !p-0"
-            />
-          </span>
+          <FotoServico
+            nome={service.name}
+            icone={service.icon}
+            className="size-12 rounded-[var(--detail-radius)]"
+          />
         );
         return (
           <button
@@ -322,13 +320,11 @@ export function ServiceSummary({
   const { t } = useI18n();
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/60 p-3">
-      <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold">
-        <ServiceIcon
-          icon={service.icon}
-          className="size-5"
-          imageClassName="size-10 object-cover !rounded-none !p-0"
-        />
-      </span>
+      <FotoServico
+        nome={service.name}
+        icone={service.icon}
+        className="size-10 rounded-[var(--detail-radius)]"
+      />
       <span className="min-w-0 flex-1 space-y-1">
         <span className="block break-normal text-sm font-bold hyphens-auto">{service.name}</span>
         <ServiceFacts terms={terms} formatMoney={formatMoney} />

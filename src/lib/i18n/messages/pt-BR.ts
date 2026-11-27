@@ -1,5 +1,9 @@
 /** Dicionário principal (fonte). Toda chave nova nasce aqui, em pt-BR. */
 export const ptBR = {
+  "modelo.fotos": "Fotos sugeridas",
+  "modelo.acabamento": "Acabamento",
+  "modelo.nasal": "Depilação nasal",
+  "modelo.barboterapia": "Barboterapia",
   "perfil.capa": "Capa do perfil",
   "perfil.adicionarCapa": "Adicionar capa",
   "perfil.trocarCapa": "Trocar capa",

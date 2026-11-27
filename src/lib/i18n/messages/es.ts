@@ -1,6 +1,10 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "modelo.fotos": "Fotos sugeridas",
+  "modelo.acabamento": "Perfilado de nuca",
+  "modelo.nasal": "Depilación nasal",
+  "modelo.barboterapia": "Tratamiento de barba",
   "perfil.capa": "Portada del perfil",
   "perfil.adicionarCapa": "Añadir portada",
   "perfil.trocarCapa": "Cambiar portada",

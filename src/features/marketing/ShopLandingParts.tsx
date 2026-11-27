@@ -20,7 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { StatusBadge, Steps, Tag, type Tone } from "@/components/visual";
-import { ServiceIcon } from "@/components/ui/service-icon";
+import { FotoServico } from "@/components/ui/FotoServico";
 import { StaffPhoto } from "@/components/ui/staff-photo";
 import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
@@ -417,29 +417,52 @@ export function SlotPills({
   );
 }
 
-/** Cartão de um serviço: ícone (ou tesoura padrão), nome, duração em pílula e preço em destaque. */
-export function ServiceRow({ service, price }: { service: LandingService; price: string }) {
+/** O catálogo e o perfil usam a mesma apresentação; no perfil, o cartão abre a agenda do titular. */
+export function ServiceRow({
+  service,
+  price,
+  reserva,
+}: {
+  service: LandingService;
+  price: string;
+  reserva?: { shop: string; barber: string; service: string };
+}) {
   const { t } = useI18n();
-  return (
-    <li className="public-card flex items-center gap-3 rounded-[var(--panel-radius)] border border-border p-3">
-      <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-muted-foreground">
-        {/* Sem ícone escolhido vira a tesoura padrão: iniciais ficam só para pessoas. */}
-        <ServiceIcon
-          icon={service.icon}
-          className="size-6"
-          imageClassName="size-full object-cover"
-        />
-      </span>
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-semibold leading-snug [overflow-wrap:anywhere]">{service.name}</p>
+  const conteudo = (
+    <>
+      <FotoServico nome={service.name} icone={service.icon} className="foto-servico-vitrine" />
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5 py-1">
+        <strong className="leading-snug [overflow-wrap:anywhere]">{service.name}</strong>
         {service.description && (
-          <p className="text-xs leading-snug text-muted-foreground">{service.description}</p>
+          <span className="text-xs leading-snug text-muted-foreground">{service.description}</span>
         )}
-        <Tag className="shop-badge" icon={Clock3}>
-          {t("shopLanding.minutes", { n: service.duration_minutes })}
-        </Tag>
-      </div>
-      <p className="shrink-0 text-base font-extrabold tabular-nums">{price}</p>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Tag className="shop-badge" icon={Clock3}>
+            {t("shopLanding.minutes", { n: service.duration_minutes })}
+          </Tag>
+          <span className="text-sm font-bold tabular-nums">{price}</span>
+        </span>
+      </span>
+      {reserva && <ChevronRight className="mr-1 size-4 shrink-0" aria-hidden />}
+    </>
+  );
+  const classe = "flex h-full min-w-0 items-center gap-3 p-2 sm:gap-4";
+  return (
+    <li className="public-card min-w-0 rounded-[var(--panel-radius)] border border-border">
+      {reserva ? (
+        <Link
+          to="/app"
+          search={{ ...reserva, tab: "agendar", join: undefined, reserva: undefined }}
+          className={cn(
+            classe,
+            "rounded-[inherit] hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring",
+          )}
+        >
+          {conteudo}
+        </Link>
+      ) : (
+        <div className={classe}>{conteudo}</div>
+      )}
     </li>
   );
 }

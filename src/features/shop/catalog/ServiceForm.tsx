@@ -51,6 +51,8 @@ import {
   SERVICE_IMAGE_ACCEPT,
   validateServiceImage,
 } from "@/lib/shop/service-image";
+import { FotoServico } from "@/components/ui/FotoServico";
+import { modelosDeServico, fotoDoModelo, normalizarServico } from "@/lib/shop/modelos-servico";
 import { PREP_OPTIONS } from "@/lib/shop/appointments";
 import { useDevice } from "@/lib/device";
 import { useI18n } from "@/lib/i18n";
@@ -173,6 +175,9 @@ export function ServiceForm({
   const hasImage = isServiceImageSource(icon);
   const prepMinutes = prep === PREP_SHOP ? shopPrep : prep;
 
+  const modelosVisiveis = modelosDeServico.filter((m) =>
+    normalizarServico(t(m.rotulo)).includes(normalizarServico(iconQuery)),
+  );
   const iconGroups = useMemo(() => {
     const allowed = new Set(searchServiceIcons(iconQuery).map((entry) => entry.id));
     return SERVICE_ICON_GROUPS.map((group) => ({
@@ -307,7 +312,33 @@ export function ServiceForm({
           wide ? "catalog-icon-groups" : "max-h-72",
         )}
       >
-        {iconGroups.length === 0 && (
+        {modelosVisiveis.length > 0 && (
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-bold text-muted-foreground">{t("modelo.fotos")}</legend>
+            <div className="flex flex-wrap gap-2">
+              {modelosVisiveis.map((m) => {
+                const foto = fotoDoModelo(m);
+                return (
+                  <button
+                    type="button"
+                    key={m.id}
+                    title={t(m.rotulo)}
+                    aria-label={t(m.rotulo)}
+                    aria-pressed={icon === foto}
+                    onClick={() => {
+                      setIcon(foto);
+                      setPickerOpen(false);
+                    }}
+                    className="size-12 overflow-hidden rounded-[var(--control-radius)] border border-border aria-pressed:ring-2 aria-pressed:ring-primary focus-visible:outline-2"
+                  >
+                    <img alt="" src={foto} loading="lazy" className="size-full object-cover" />
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+        {iconGroups.length === 0 && modelosVisiveis.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">
             {t("shop.serviceForm.noIcons")}
           </p>
@@ -363,11 +394,7 @@ export function ServiceForm({
         aria-expanded={pickerOpen}
         className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-muted text-gold ring-offset-2 transition hover:ring-2 hover:ring-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
-        <ServiceIcon
-          icon={icon}
-          className="size-6"
-          imageClassName="size-14 object-cover !rounded-none !p-0"
-        />
+        <FotoServico nome={name} icone={icon} className="size-full" />
       </button>
       <span className="min-w-0 flex-1 space-y-1.5">
         <span

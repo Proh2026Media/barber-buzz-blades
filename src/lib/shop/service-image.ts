@@ -1,3 +1,4 @@
+import { modeloDaFoto } from "./modelos-servico";
 import { supabase } from "@/integrations/supabase/client";
 import { t } from "../i18n/index.ts";
 
@@ -30,7 +31,10 @@ function storageUploadError(error: unknown, kind: "service" | "staff") {
 }
 
 export function isServiceImageSource(value: string | null | undefined): value is string {
-  return Boolean(value && (/^https?:\/\//i.test(value) || value.startsWith("data:image/")));
+  return Boolean(
+    value &&
+    (/^https?:\/\//i.test(value) || value.startsWith("data:image/") || modeloDaFoto(value)),
+  );
 }
 
 export function validateServiceImage(file: File): string | null {

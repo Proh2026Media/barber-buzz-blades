@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+27/11/2026 — A vitrine da loja e a do profissional compartilham cabeçalho e cartões de serviços. A consulta do link pessoal inclui o ícone e a descrição dos serviços oferecidos pelo titular. Fotos ilustrativas por categoria aparecem quando falta foto própria e ficam disponíveis no seletor de imagens. A equipe continua apenas na página geral.
+
 27/11/2026 — O link pessoal de cada barbeiro, incluindo parceiros e sócios, apresenta apenas o titular, os serviços dele e o agendamento direcionado. A página geral da barbearia concentra a escolha entre profissionais e mostra as fotos da equipe. A função pública do perfil devolve a lista de equipe vazia para manter compatibilidade com a versão anterior.
 
 27/11/2026 — Página pessoal do profissional. O endereço público de um barbeiro ativo abre com nome, capa, foto, apresentação e botão de agendamento com o titular do link. Com mais de um perfil público, a equipe aparece em miniaturas antes dos serviços. A capa individual e o retrato são independentes. O painel de equipe e Ajustes → Meu perfil e link usam o mesmo formulário e as permissões já existentes. Sem imagens pessoais, o perfil usa a capa da loja e as iniciais.

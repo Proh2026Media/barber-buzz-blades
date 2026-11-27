@@ -27,8 +27,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { CabecalhoVitrine } from "./CabecalhoVitrine";
 import { EmptyState, Notice, StatusBadge, type Tone } from "@/components/visual";
 import { StaffPhoto } from "@/components/ui/staff-photo";
 import { useI18n } from "@/lib/i18n";
@@ -68,7 +67,6 @@ const REFRESH_MS = 60_000;
 /** Cor de destaque ajustada para leitura nos dois temas (ícones de seção fora dos cartões). */
 const accentIconClass =
   "text-[var(--brand-accent-readable)] dark:text-[var(--brand-accent-readable-dark,var(--brand-accent-readable))]";
-const heroIconButton = "app-icon-button hero-icon-button";
 
 /** Situação da última atualização dos horários (selo "Ao vivo" ou "Sem conexão"). */
 export type LandingFreshness = {
@@ -419,40 +417,26 @@ export function ShopLandingView({
       ) : (
         <PublicBrandFontFace shopId={shop.id} url={shop.custom_font_url} />
       )}
-      <header className={cn("shop-hero", shop.hero_image_url && "shop-hero-with-photo")}>
-        {/* Formas chapadas na cor da loja: quarto de círculo (com a foto da capa, se houver) e anel. */}
-        <span className="shop-hero-quarter" aria-hidden>
-          {shop.hero_image_url && <img src={shop.hero_image_url} alt="" />}
-        </span>
-        <span className="shop-hero-ring" aria-hidden />
-        {topBar}
-        <div
-          className={cn(
-            "mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-4",
-            wide && "lg:max-w-6xl",
-          )}
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            {shop.logo_url ? (
-              <span
-                className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]"
-                style={{ backgroundColor: shop.logo_background_color ?? undefined }}
-              >
-                <img src={shop.logo_url} alt={t("shopLanding.logoAlt", { name })} />
-              </span>
-            ) : (
-              <span className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]">
-                <SeloBarbearia lojaId={shop.id} tema={shop} nome={name} tamanho={48} />
-              </span>
-            )}
-          </div>
-          {!preview && (
-            <div className="flex items-center gap-2">
-              <LanguageSwitcher showCode buttonClassName={heroIconButton} />
-              <ThemeToggle buttonClassName={heroIconButton} />
-            </div>
-          )}
-        </div>
+      <CabecalhoVitrine
+        foto={shop.hero_image_url}
+        topBar={topBar}
+        amplo={wide}
+        mostrarControles={!preview}
+        identidade={
+          shop.logo_url ? (
+            <span
+              className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]"
+              style={{ backgroundColor: shop.logo_background_color ?? undefined }}
+            >
+              <img src={shop.logo_url} alt={t("shopLanding.logoAlt", { name })} />
+            </span>
+          ) : (
+            <span className="quadro-logo-loja shop-hero-logo size-12 rounded-[var(--control-radius)]">
+              <SeloBarbearia lojaId={shop.id} tema={shop} nome={name} tamanho={48} />
+            </span>
+          )
+        }
+      >
         <div
           className={cn(
             "shop-hero-body mx-auto max-w-3xl px-4 pb-6 pt-8",
@@ -510,7 +494,7 @@ export function ShopLandingView({
             className={cn("mt-6", wide && "tablet:mt-0")}
           />
         </div>
-      </header>
+      </CabecalhoVitrine>
 
       <div
         className={cn(
