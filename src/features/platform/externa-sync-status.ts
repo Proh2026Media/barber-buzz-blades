@@ -1,5 +1,13 @@
 export const LOJA_COM_PLANILHA = "a5c2b03b-1e30-4446-b013-8cb8a9d8c447";
-export const CONTAGENS = ["linhas", "vinculadas", "pendentes", "ausentes", "excluidas"] as const;
+export const CONTAGENS = [
+  "linhas",
+  "vinculadas",
+  "pendentes",
+  "ausentes",
+  "excluidas",
+  "historicoVinculado",
+  "historicoRevisao",
+] as const;
 export const HORARIOS = ["sucesso", "tentativa", "mudanca"] as const;
 
 const estados = ["ok", "erro", "atrasado", "revisar"] as const;
@@ -14,11 +22,20 @@ export type SituacaoPlanilha = {
 export function lerSituacaoPlanilha(valor: unknown): SituacaoPlanilha | null {
   if (valor === null) return null;
   if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new TypeError();
-  const obj = valor as Record<string, unknown>;
+  const obj: Record<string, unknown> = {
+    historicoVinculado: null,
+    historicoRevisao: null,
+    ...valor,
+  };
+
   if (!estados.some((estado) => estado === obj.estado)) throw new TypeError();
   for (const campo of CONTAGENS) {
     const numero = obj[campo];
-    if (numero === null && obj.sucesso === null) continue;
+    if (
+      numero === null &&
+      (obj.sucesso === null || campo === "historicoVinculado" || campo === "historicoRevisao")
+    )
+      continue;
     if (typeof numero !== "number" || !Number.isSafeInteger(numero) || numero < 0)
       throw new TypeError();
   }
@@ -65,6 +82,16 @@ export function motivoDaRevisao(motivo: string) {
     case "vinculo_legado_inconclusivo":
     case "vinculo_duplicado":
       return "externaSync.ambigua";
+    case "ficha_com_titular":
+      return "externaSync.outroTitular";
+    case "contato_compartilhado":
+      return "externaSync.compartilhado";
+    case "identidade_divergente":
+    case "contato_divergente":
+      return "externaSync.divergente";
+    case "prova_insuficiente":
+    case "ficha_em_revisao":
+      return "externaSync.revisarTitular";
     case "horario_ocupado":
       return "externaSync.ocupado";
     case "catalogo_inativo":

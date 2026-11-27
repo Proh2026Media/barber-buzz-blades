@@ -8,6 +8,8 @@ do $$ begin
 end $$;
 \ir instalar.sql
 \ir instalar.sql
+\ir conciliacao.sql
+\ir conciliacao.sql
 create table manutencao.importacao_externa(tipo text,id uuid,n integer);
 insert into public.barbershops(id,name,slug) values('a5c2b03b-1e30-4446-b013-8cb8a9d8c447','Unidade fictícia','externabarbearia');
 insert into public.staff(barbershop_id,display_name,booking_slug)
@@ -31,6 +33,7 @@ create function pg_temp.proximo() returns void language plpgsql as $$
 begin drop table espelho_resultado,ext_catalogo,ext_processar,ext_entrada; end $$;
 \ir sincronizar.sql
 select pg_temp.conferir(resumo @> '{"linhas":3,"criadas":1,"fichas_criadas":1,"pendentes":1,"excluidas_da_agenda":1}', 'primeiro ciclo completo') from espelho_resultado;
+\ir teste-conciliacao.sql
 select pg_temp.conferir((select starts_at at time zone 'America/Sao_Paulo'=timestamp '2024-01-27 09:30'
   from public.appointments where barbershop_id='a5c2b03b-1e30-4446-b013-8cb8a9d8c447'),'hora civil da loja');
 select pg_temp.conferir(not exists(select from public.email_outbox where barbershop_id='a5c2b03b-1e30-4446-b013-8cb8a9d8c447')

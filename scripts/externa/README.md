@@ -17,4 +17,12 @@ O leitor reutiliza as fichas e os identificadores da importação. Uma colisão 
 
 O dono da Externa e o administrador com acesso à ficha podem consultar o e-mail informado em cada reserva, com sua data e hora. Esse e-mail é um dado da reserva. A confirmação do endereço da conta continua no fluxo de autenticação.
 
-Para reinstalar, gere `referencia.json` com `leitor.py preparar-referencia DIRETORIO_DA_MIGRACAO DESTINO`. Proteja o arquivo com modo 0600 na pasta 0700 da integração. Ao substituir uma referência em uso, transfira para um nome temporário e só depois renomeie o arquivo completo. Aplique `instalar.sql`, `monitor.sql` e `contatos.sql` numa transação administrativa, confira o ensaio e só então ative o timer. O arquivo de referência e as exportações com clientes ficam fora do Git.
+Para reinstalar, gere `referencia.json` com `leitor.py preparar-referencia DIRETORIO_DA_MIGRACAO DESTINO`. Proteja o arquivo com modo 0600 na pasta 0700 da integração. Ao substituir uma referência em uso, transfira para um nome temporário e só depois renomeie o arquivo completo. Aplique `instalar.sql`, `conciliacao.sql`, `monitor.sql` e `contatos.sql` nessa ordem numa transação administrativa, confira o ensaio e só então ative o timer. O arquivo de referência e as exportações com clientes ficam fora do Git.
+
+## Histórico dos clientes
+
+Cada leitura bem-sucedida, inclusive com a planilha inalterada, reavalia as contas que entraram na Externa como clientes. A conta precisa ter um contato confirmado pelo sistema de autenticação. A confirmação de telefone já registrada pelo servidor também vale. Editar o telefone de contato no perfil não o confirma.
+
+O cruzamento usa o nome original das reservas, o telefone completo e o e-mail inteiro. Desconsidera caixa, acentos e espaços excedentes no nome. Para vincular, exige dois contatos confirmados coincidentes, ou um contato confirmado e o nome completo coincidente. Dados confirmados divergentes, nome incompatível, inconsistências entre reservas da ficha, contato compartilhado, fichas múltiplas ou um titular anterior tornam o caso sujeito a revisão. Nenhuma ficha de outra loja participa da transferência.
+
+As reservas preservam seus identificadores. A tabela privada `manutencao.externa_historico_vinculado` registra qual conta recebeu cada reserva e por qual critério. Casos ambíguos aparecem com a referência de linha no monitor de sincronização do painel global. A revisão por uma pessoa pode usar a planilha e os dados da ficha para confirmar a titularidade. A presença do mesmo telefone em uma conta não autoriza transferir o histórico de outra conta.

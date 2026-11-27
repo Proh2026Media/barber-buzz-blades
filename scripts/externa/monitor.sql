@@ -25,13 +25,16 @@ begin
     'tentativa',e.tentativa,'sucesso',e.sucesso,'mudanca',e.mudanca,
     'estado',case when e.erro is not null then 'erro'
       when e.sucesso is null or e.sucesso < now()-interval '15 minutes' then 'atrasado'
-      when coalesce((e.totais->>'pendentes')::integer,0)>0 then 'revisar' else 'ok' end,
+      when coalesce((e.totais->>'pendentes')::integer,0)>0 or exists(select from manutencao.externa_historico_revisao) then 'revisar' else 'ok' end,
     'linhas',e.totais->'linhas','vinculadas',e.totais->'vinculadas',
     'pendentes',e.totais->'pendentes','ausentes',e.totais->'ausentes',
     'excluidas',e.totais->'excluidas_da_agenda',
+    'historicoVinculado',(select count(*) from manutencao.externa_historico_vinculado),
+    'historicoRevisao',(select count(*) from manutencao.externa_historico_revisao),
     'revisao',(select coalesce(jsonb_agg(to_jsonb(p) order by p.linha),'[]'::jsonb)
       from (select (l.registro->>'linha')::integer linha,l.motivo
         from manutencao.espelho_externa_linhas l where l.presente and l.situacao='pendente'
+        union select h.linha,h.motivo from manutencao.externa_historico_revisao h
         order by linha limit 20) p)
   ) from externa_monitor.estado e where e.loja=p_shop_id);
 end $$;

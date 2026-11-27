@@ -139,16 +139,33 @@ begin
          (anterior.whatsapp_e164=tel or (existe_legado and tel=j->>'telefone_legado') or m.origem_aplicada->>'telefone'=tel) then
         c:=anterior;
       else
+        if (select count(*) from public.shop_clients where barbershop_id=loja and whatsapp_e164=tel)>1 then
+          raise exception using errcode='P1201',message='vinculo_duplicado';
+        end if;
         select * into c from public.shop_clients where barbershop_id=loja and whatsapp_e164=tel for update;
         if c.profile_id is not null or exists(select from public.profiles p join public.memberships mb on mb.user_id=p.id
            where mb.barbershop_id=loja and p.whatsapp_e164=tel) then
-          raise exception using errcode='P1201',message='telefone_com_conta';
+          if not criar or not exists(select from manutencao.externa_cruzamento x where x.telefone=tel and x.motivo is null
+            and (c.profile_id is null or c.profile_id=x.conta)
+            and not exists(select from public.shop_clients outra where outra.barbershop_id=loja and outra.profile_id=x.conta
+              and outra.id is distinct from c.id)) then
+            raise exception using errcode='P1201',message='telefone_com_conta';
+          end if;
         end if;
         if c.id is null then
           insert into public.shop_clients(barbershop_id,full_name,whatsapp_e164,notify_whatsapp)
             values(loja,nome,tel,false) returning * into c;
           criou_ficha:=true; guardar_ficha:=true;
         end if;
+      end if;
+      if criar and c.profile_id is not null and manutencao.nome_para_conciliacao(c.full_name)
+         is distinct from manutencao.nome_para_conciliacao(j->>'nome') then
+        raise exception using errcode='P1201',message='identidade_divergente';
+      end if;
+      if criar and c.profile_id is not null and exists(select from public.appointments ap where ap.shop_client_id=c.id and
+        (ap.customer_id is distinct from c.profile_id or not exists(select from manutencao.espelho_externa_linhas el
+          where el.agendamento_id=ap.id and el.presente and el.situacao='vinculada' and el.motivo is null and el.registro->>'telefone'=tel))) then
+        raise exception using errcode='P1201',message='telefone_com_conta';
       end if;
       select * into fc from manutencao.espelho_externa_fichas where ficha_id=c.id for update;
       if fc.ficha_id is null and (guardar_ficha or (existe_legado and c.whatsapp_e164=tel and
@@ -244,4 +261,6 @@ begin
     ) p),'{}'::jsonb))
   from manutencao.espelho_externa_linhas;
 end $$;
+-- Após todas as linhas, inclusive nos ciclos sem edição da planilha.
+select manutencao.conciliar_historico_externa();
 select resumo from pg_temp.espelho_resultado;

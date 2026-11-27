@@ -103,7 +103,7 @@ def copiar(tabela, linhas):
 
 
 def sincronizar(meta, linhas, extras, inicio, container, ensaio):
-    sql = ["begin;", "set local statement_timeout='120s'; set local lock_timeout='8s';",
+    sql = ["begin isolation level repeatable read;", "set local statement_timeout='120s'; set local lock_timeout='8s';",
            "select pg_advisory_xact_lock(hashtextextended('espelho-externa-elfsight',0));",
            "create temp table espelho_meta(registro jsonb) on commit drop;",
            "create temp table espelho_linhas(registro jsonb) on commit drop;",

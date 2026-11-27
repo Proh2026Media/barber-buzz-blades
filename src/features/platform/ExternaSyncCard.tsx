@@ -114,7 +114,7 @@ export function ExternaSyncCard({ shopId, timezone }: { shopId: string; timezone
             <ul className="divide-y divide-border border-t border-border">
               {dados.revisao.map(({ linha, motivo }) => (
                 <li
-                  key={linha}
+                  key={`${linha}-${motivo}`}
                   className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-1 text-sm"
                 >
                   <span>{t(motivoDaRevisao(motivo))}</span>

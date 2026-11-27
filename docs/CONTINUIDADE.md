@@ -1,5 +1,9 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+## 26/11/2026 — Cruzamento do histórico da Externa
+
+O espelho reavalia as contas de clientes em cada ciclo, inclusive quando só o cadastro foi atualizado. A decisão cruza contatos confirmados com os dados originais da ficha. O painel global mostra as reservas atribuídas automaticamente e as fichas em revisão. Os critérios e a ordem de instalação estão no [guia da integração](../scripts/externa/README.md). O ensaio real inicial encontrou uma ficha para revisão e nenhuma reserva nova elegível. Os testes com dados fictícios cobrem cadastro, alteração posterior, repetição, contato compartilhado, titular anterior, nova reserva e leitura com as permissões do cliente.
+
 ## 26/11/2026 — Fontes próprias na personalização e nas páginas públicas
 
 A vitrine e o login da Externa exibiam Benguiat Book Italic com a preferência Medium normal. O navegador confirmou esse arquivo em larguras de 390 e 1280 px. A migração `20261126020000_fontes_publicas_da_loja.sql` corrige a referência principal quando já existe uma variante normal e permite consultar as variantes publicadas de uma loja ativa pela versão exata da fonte. O editor usa a mesma regra para novos envios e oferece os dois estilos das famílias variáveis quando disponíveis.
