@@ -25,12 +25,11 @@ export type PerfilPublico = {
     estilo: string | null;
   };
   profissional: Pessoa & { bio: string | null; capa: string | null };
-  equipe: Pessoa[];
   servicos: { id: string; nome: string; minutos: number; centavos: number }[];
 };
 
 export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
-  const { loja, profissional, equipe, servicos } = perfil;
+  const { loja, profissional, servicos } = perfil;
   const { t, intlLocale } = useI18n();
   const [imagensIndisponiveis, setImagensIndisponiveis] = useState<string[]>([]);
   const capa = [profissional.capa, loja.capa].find((url): url is string =>
@@ -113,67 +112,40 @@ export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
               </Link>
             </div>
           </section>
-          <div className="min-w-0 space-y-5">
-            {equipe.length > 1 && (
-              <nav
-                aria-labelledby="equipe-profissional"
-                className="public-card rounded-[var(--panel-radius)] border border-border bg-card p-4"
-              >
-                <h2 id="equipe-profissional" className="shop-section-title">
-                  {t("shopLanding.staffTitle")}
-                </h2>
-                <ul className="mt-3 flex flex-wrap gap-2">
-                  {equipe.map((p) => (
-                    <li key={p.slug}>
-                      <Link
-                        to="/$barberSlug"
-                        params={{ barberSlug: p.slug }}
-                        aria-current={p.slug === profissional.slug ? "page" : undefined}
-                        className="perfil-miniatura inline-flex min-h-11 items-center gap-2 rounded-[var(--button-radius)] border border-border px-2.5 py-1 text-sm font-semibold"
-                      >
-                        <PersonAvatar size="sm" name={p.nome} src={p.foto} seed={p.slug} />
-                        {p.nome}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            )}
-            {servicos.length > 0 && (
-              <section
-                aria-labelledby="servicos-profissional"
-                className="public-card rounded-[var(--panel-radius)] border border-border bg-card p-4"
-              >
-                <h2 id="servicos-profissional" className="shop-section-title">
-                  <Scissors className="size-5" aria-hidden />
-                  {t("shopLanding.servicesTitle")}
-                </h2>
-                <ul className="mt-2 divide-y divide-border">
-                  {servicos.map((s) => (
-                    <li key={s.id}>
-                      <Link
-                        to="/app"
-                        search={{ ...busca, service: s.id }}
-                        className="flex min-h-14 items-center gap-3 py-3"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <strong className="block break-words">{s.nome}</strong>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock3 className="size-3.5" aria-hidden />
-                            {t("team.notice.minutes", { count: s.minutos })}
-                          </span>
+          {servicos.length > 0 && (
+            <section
+              aria-labelledby="servicos-profissional"
+              className="public-card min-w-0 rounded-[var(--panel-radius)] border border-border bg-card p-4"
+            >
+              <h2 id="servicos-profissional" className="shop-section-title">
+                <Scissors className="size-5" aria-hidden />
+                {t("shopLanding.servicesTitle")}
+              </h2>
+              <ul className="mt-2 divide-y divide-border">
+                {servicos.map((s) => (
+                  <li key={s.id}>
+                    <Link
+                      to="/app"
+                      search={{ ...busca, service: s.id }}
+                      className="flex min-h-14 items-center gap-3 py-3"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <strong className="block break-words">{s.nome}</strong>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock3 className="size-3.5" aria-hidden />
+                          {t("team.notice.minutes", { count: s.minutos })}
                         </span>
-                        <span className="text-sm font-semibold">
-                          {moeda.format(s.centavos / 100)}
-                        </span>
-                        <ChevronRight className="size-4 shrink-0" aria-hidden />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-          </div>
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {moeda.format(s.centavos / 100)}
+                      </span>
+                      <ChevronRight className="size-4 shrink-0" aria-hidden />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
     </main>

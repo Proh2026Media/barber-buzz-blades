@@ -231,11 +231,6 @@
   border-radius: 50%;
   background: var(--card);
 }
-.perfil-publico .perfil-retrato > *,
-.perfil-publico .perfil-miniatura .rounded-full {
+.perfil-publico .perfil-retrato > * {
   border-radius: 50%;
-}
-.perfil-miniatura[aria-current="page"] {
-  border-color: currentColor;
-  background: var(--muted);
 }
