@@ -81,7 +81,9 @@ function AppRoute() {
     const contexto = !search.shop || search.shop === visitante ? search : undefined;
     return (
       <AgendamentoPublico
+        key={visitante + JSON.stringify(contexto ?? {})}
         loja={visitante}
+        service={contexto?.service}
         barber={contexto?.barber}
         day={contexto?.day}
         time={contexto?.time}

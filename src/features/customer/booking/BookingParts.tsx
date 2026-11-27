@@ -32,6 +32,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { enGB, enUS, es, pt, ptBR } from "date-fns/locale";
 import type { DayButtonProps } from "react-day-picker";
 import type { Tables } from "@/integrations/supabase/types";
+import { DatePicker } from "@/components/ui/schedule-picker";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import {
   ChoiceChips,
@@ -207,7 +208,10 @@ export function ServiceFacts({
   );
 }
 
-export function ServiceChoices({
+type ServicoVisivel = Pick<Tables<"services">, "id" | "name" | "description" | "icon">;
+type ProfissionalVisivel = Pick<Tables<"staff">, "id" | "display_name" | "avatar_url" | "bio">;
+
+export function ServiceChoices<S extends ServicoVisivel>({
   services,
   selectedIndex,
   view,
@@ -217,10 +221,10 @@ export function ServiceChoices({
   disabled,
   onPick,
 }: {
-  services: Tables<"services">[];
+  services: S[];
   selectedIndex: number;
   view: CatalogViewMode;
-  termsFor: (service: Tables<"services">) => PriceTerms;
+  termsFor: (service: S) => PriceTerms;
   formatMoney: (cents: number) => string;
   /** A escolha veio pronta (primeiro da lista): mostra "Sugerido" até a pessoa tocar. */
   suggested: boolean;
@@ -309,7 +313,7 @@ export function ServiceSummary({
   formatMoney,
   suggested,
 }: {
-  service: Tables<"services">;
+  service: ServicoVisivel;
   terms: PriceTerms;
   formatMoney: (cents: number) => string;
   /** Veio sugerido e foi aceito ao escolher o horário: mantém o selo "Sugerido". */
@@ -353,7 +357,7 @@ export function StaffChoices({
   onPick,
   onAny,
 }: {
-  choices: { member: Tables<"staff">; index: number }[];
+  choices: { member: ProfissionalVisivel; index: number }[];
   /** Índice escolhido (no catálogo completo); null com "qualquer profissional". */
   selectedIndex: number | null;
   anyOption: boolean;
@@ -364,7 +368,7 @@ export function StaffChoices({
   suggested: boolean;
   disabled?: boolean;
   onPick: (index: number) => void;
-  onAny: () => void;
+  onAny?: () => void;
 }) {
   const { t } = useI18n();
   return (
@@ -474,7 +478,7 @@ export function StaffSummary({
   favorite,
   suggested,
 }: {
-  member: Tables<"staff"> | null;
+  member: ProfissionalVisivel | null;
   any?: boolean;
   locked?: boolean;
   favorite?: boolean;
@@ -746,6 +750,94 @@ export function DayCalendar({
 /* -------------------------------------------------------------------------------------------- */
 /* Horários                                                                                      */
 /* -------------------------------------------------------------------------------------------- */
+
+/** Calendário e grade da agenda, tanto na consulta pública quanto na conta do cliente. */
+export function BookingDateChoices({
+  expandedBooking,
+  bookingDayKeys,
+  selectedDay,
+  shopTimeZone,
+  closedWeekdays,
+  bookingBusy = false,
+  pickDay,
+  children: timeGrid,
+}: {
+  expandedBooking: boolean;
+  bookingDayKeys: string[];
+  selectedDay: string;
+  shopTimeZone: string;
+  closedWeekdays: Set<number> | null;
+  bookingBusy?: boolean;
+  pickDay: (day: string) => void;
+  children: ReactNode;
+}) {
+  const { t, intlLocale } = useI18n();
+  // "quarta-feira, 21 de outubro" com a inicial maiúscula (título do dia no computador).
+  const selectedDayHeading = (() => {
+    const text = formatShopDate(
+      shopDateTime(selectedDay, "12:00:00", shopTimeZone),
+      shopTimeZone,
+      {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      },
+      intlLocale,
+    );
+    return text.charAt(0).toLocaleUpperCase(intlLocale) + text.slice(1);
+  })();
+  return expandedBooking ? (
+    // Tablet e computador: calendário à esquerda e horários do dia à direita
+    // (lado a lado quando o passo tem 32rem ou mais; senão, empilhados).
+    <div className="@container">
+      <div className="grid gap-5 @min-[32rem]:grid-cols-[auto_minmax(0,1fr)] @min-[32rem]:gap-6">
+        <DayCalendar
+          keys={bookingDayKeys}
+          selected={selectedDay}
+          closedWeekdays={closedWeekdays}
+          disabled={bookingBusy}
+          onSelect={pickDay}
+        />
+        <div className="min-w-0 space-y-3">
+          <p className="flex items-center gap-2 text-sm font-bold">
+            <CalendarDays className="size-4 text-gold" aria-hidden />
+            {selectedDayHeading}
+          </p>
+          {timeGrid}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <>
+      <DayStrip
+        keys={bookingDayKeys}
+        selected={selectedDay}
+        timeZone={shopTimeZone}
+        closedWeekdays={closedWeekdays}
+        disabled={bookingBusy}
+        onSelect={pickDay}
+        calendar={
+          <DatePicker
+            compact
+            disabled={bookingBusy}
+            label={t("booking.pickCalendar")}
+            displayValue={t("booking.moreDates")}
+            value={selectedDay}
+            onChange={pickDay}
+            min={dateFromLocalKey(bookingDayKeys[0])}
+            max={dateFromLocalKey(bookingDayKeys[bookingDayKeys.length - 1])}
+            // Como a faixa de dias: o 1º dia é "Hoje"; fechados com lua.
+            todayKey={bookingDayKeys[0]}
+            todayLabel={t("booking.today")}
+            closedDays={closedWeekdays ? (date) => closedWeekdays.has(date.getDay()) : undefined}
+            closedLabel={t("booking.closed")}
+          />
+        }
+      />
+      {timeGrid}
+    </>
+  );
+}
 
 export type MayOpenSlot = { iso: string; onClick: () => void };
 
@@ -1363,7 +1455,17 @@ export function BookingDone({
           <StatusBadge tone="info" icon={CalendarCheck} label={t("status.confirmed")} size="sm" />
         }
       />
-      <IconList items={[{ key: "manage", icon: CalendarClock, text: t("booking.doneHint", { aba: t(variosHorarios ? "nav.bookings" : "nav.booking") }) }]} />
+      <IconList
+        items={[
+          {
+            key: "manage",
+            icon: CalendarClock,
+            text: t("booking.doneHint", {
+              aba: t(variosHorarios ? "nav.bookings" : "nav.booking"),
+            }),
+          },
+        ]}
+      />
       <div className="grid gap-2 sm:grid-cols-2">
         <button
           type="button"

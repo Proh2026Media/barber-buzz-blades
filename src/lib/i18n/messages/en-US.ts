@@ -1,6 +1,9 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const enUS: Record<MessageKey, string> = {
+  "rapido.entrarConfirmar": "Sign in to confirm",
+  "rapido.codigoSeis": "Email code (6 digits)",
+  "rapido.formatoCodigo": "Enter or paste all 6 digits from the email.",
   "rapido.continuar": "Continue",
   "rapido.chaveAlternativa": "Try again or sign in with email or Google.",
   "rapido.chaveEntrar": "Sign in with a passkey",

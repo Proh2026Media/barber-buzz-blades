@@ -2213,7 +2213,14 @@ function AuthPage() {
                   brand.shopId ? (
                     <AcessoRapido
                       aoEntrar={goAfterAuthLocal}
-                      usarSenha={() => setUsarSenha(true)}
+                      email={email}
+                      setEmail={setEmail}
+                      usarSenha={() => {
+                        setUsarSenha(true);
+                        window.requestAnimationFrame(() => {
+                          (email.trim() ? passwordInputRef : emailInputRef).current?.focus();
+                        });
+                      }}
                     />
                   ) : (
                     <form

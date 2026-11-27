@@ -21,8 +21,7 @@ import {
   BookingDone,
   BookingSummaryBar,
   ChangeButton,
-  DayCalendar,
-  DayStrip,
+  BookingDateChoices,
   RepeatPicker,
   RescheduleFromTo,
   ServiceChoices,
@@ -100,7 +99,6 @@ import { brandCornerClass, brandFontScopeClass, brandVariables } from "@/lib/sho
 import { useShopFavicon } from "@/lib/shop/favicon";
 import { BrandFontFace } from "@/features/shop/BrandFontFace";
 import { BrandRootVariables } from "@/features/shop/BrandRootVariables";
-import { DatePicker } from "@/components/ui/schedule-picker";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import {
@@ -157,7 +155,6 @@ import {
   filterReservations,
   type ReservationFilter,
   buildBookingDateKeys,
-  dateFromLocalKey,
   formatShopDate as formatShopDateIn,
   formatSlotLabel as formatSlotLabelIn,
   shiftDateKey,
@@ -2795,15 +2792,6 @@ function ArenaApp({
 
   // Peças do passo 3 e do "Conferir" usadas em dois lugares (celular: nos cartões dos passos;
   // computador: calendário ao lado dos horários e o Conferir dentro do painel de resumo).
-  // "quarta-feira, 21 de outubro" com a inicial maiúscula (título do dia no computador).
-  const selectedDayHeading = (() => {
-    const text = formatShopDate(shopDateTime(selectedDay, "12:00:00", shopTimeZone), shopTimeZone, {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-    return text.charAt(0).toLocaleUpperCase(intlLocale) + text.slice(1);
-  })();
   const timeGrid = (
     <TimeGrid
       state={gridState}
@@ -3662,61 +3650,17 @@ function ArenaApp({
                       title={t("booking.step.when")}
                       state={whenStep}
                     >
-                      {expandedBooking ? (
-                        // Tablet e computador: calendário à esquerda e horários do dia à direita
-                        // (lado a lado quando o passo tem 32rem ou mais; senão, empilhados).
-                        <div className="@container">
-                          <div className="grid gap-5 @min-[32rem]:grid-cols-[auto_minmax(0,1fr)] @min-[32rem]:gap-6">
-                            <DayCalendar
-                              keys={bookingDayKeys}
-                              selected={selectedDay}
-                              closedWeekdays={closedWeekdays}
-                              disabled={bookingBusy}
-                              onSelect={pickDay}
-                            />
-                            <div className="min-w-0 space-y-3">
-                              <p className="flex items-center gap-2 text-sm font-bold">
-                                <CalendarDaysIcon className="size-4 text-gold" aria-hidden />
-                                {selectedDayHeading}
-                              </p>
-                              {timeGrid}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <DayStrip
-                            keys={bookingDayKeys}
-                            selected={selectedDay}
-                            timeZone={shopTimeZone}
-                            closedWeekdays={closedWeekdays}
-                            disabled={bookingBusy}
-                            onSelect={pickDay}
-                            calendar={
-                              <DatePicker
-                                compact
-                                disabled={bookingBusy}
-                                label={t("booking.pickCalendar")}
-                                displayValue={t("booking.moreDates")}
-                                value={selectedDay}
-                                onChange={pickDay}
-                                min={dateFromLocalKey(bookingDayKeys[0])}
-                                max={dateFromLocalKey(bookingDayKeys[bookingDayKeys.length - 1])}
-                                // Como a faixa de dias: o 1º dia é "Hoje"; fechados com lua.
-                                todayKey={bookingDayKeys[0]}
-                                todayLabel={t("booking.today")}
-                                closedDays={
-                                  closedWeekdays
-                                    ? (date) => closedWeekdays.has(date.getDay())
-                                    : undefined
-                                }
-                                closedLabel={t("booking.closed")}
-                              />
-                            }
-                          />
-                          {timeGrid}
-                        </>
-                      )}
+                      <BookingDateChoices
+                        expandedBooking={expandedBooking}
+                        bookingDayKeys={bookingDayKeys}
+                        selectedDay={selectedDay}
+                        shopTimeZone={shopTimeZone}
+                        closedWeekdays={closedWeekdays}
+                        bookingBusy={bookingBusy}
+                        pickDay={pickDay}
+                      >
+                        {timeGrid}
+                      </BookingDateChoices>
                       <WaitingCards
                         controller={{ ...waiting, waits: mayOpenWaits }}
                         mode="opportunities"

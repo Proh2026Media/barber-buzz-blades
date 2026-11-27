@@ -1,6 +1,9 @@
 import type { MessageKey } from "./pt-BR.ts";
 
 export const es: Record<MessageKey, string> = {
+  "rapido.entrarConfirmar": "Entrar para confirmar",
+  "rapido.codigoSeis": "Código del correo (6 dígitos)",
+  "rapido.formatoCodigo": "Escribe o pega los 6 dígitos del código enviado por correo.",
   "rapido.continuar": "Continuar",
   "rapido.chaveAlternativa": "Puedes volver a intentarlo o entrar con correo o Google.",
   "rapido.chaveEntrar": "Entrar con clave de acceso",

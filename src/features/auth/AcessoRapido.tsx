@@ -7,12 +7,16 @@ import { suportaChave } from "@/lib/auth/agendamento-rapido";
 export function AcessoRapido({
   aoEntrar,
   usarSenha,
+  email,
+  setEmail,
 }: {
   aoEntrar: () => Promise<void>;
   usarSenha: () => void;
+  email: string;
+  setEmail: (valor: string) => void;
 }) {
   const { t } = useI18n();
-  const [email, setEmail] = useState("");
+  const [formatoInvalido, setFormatoInvalido] = useState(false);
   const [destino, setDestino] = useState("");
   const [codigo, setCodigo] = useState("");
   const [ocupado, setOcupado] = useState(false);
@@ -55,6 +59,7 @@ export function AcessoRapido({
     });
     if (error && !["user_not_found", "signup_disabled", "otp_disabled"].includes(error.code ?? ""))
       throw error;
+    setFormatoInvalido(false);
     setDestino(alvo);
     setCodigo("");
     setEspera(60);
@@ -66,10 +71,15 @@ export function AcessoRapido({
       void executar(enviar, t("auth.error.sendCode"));
       return;
     }
+    if (!/^\d{6}$/.test(codigo)) {
+      setFormatoInvalido(true);
+      campoCodigo.current?.focus();
+      return;
+    }
     void executar(async () => {
       const { data, error } = await supabase.auth.verifyOtp({
         email: destino,
-        token: codigo.trim(),
+        token: codigo,
         type: "email",
       });
       if (error || !data.session) throw error ?? new Error();
@@ -95,7 +105,7 @@ export function AcessoRapido({
           {t("rapido.chaveEntrar")}
         </button>
       )}
-      <form className="acesso-form" onSubmit={confirmar}>
+      <form className="acesso-form" noValidate={Boolean(destino)} onSubmit={confirmar}>
         {!destino ? (
           <label className="grid gap-1">
             {t("auth.field.email")}
@@ -112,7 +122,7 @@ export function AcessoRapido({
           <>
             <p role="status">{t("rapido.enviado", { email: destino })}</p>
             <label className="grid gap-1">
-              {t("rapido.codigo")}
+              {t("rapido.codigoSeis")}
               <input
                 ref={campoCodigo}
                 className="min-h-12 w-full rounded-[var(--button-radius)] border border-border bg-background px-3 text-base text-foreground"
@@ -120,12 +130,25 @@ export function AcessoRapido({
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 required
-                pattern="[0-9]{6,10}"
-                maxLength={10}
+                aria-invalid={formatoInvalido || undefined}
+                aria-describedby={formatoInvalido ? "acesso-formato-codigo" : undefined}
                 value={codigo}
-                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => {
+                  // Normalizar antes de validar para conservar inclusive o zero inicial.
+                  const valor = e.target.value
+                    .normalize("NFKC")
+                    .replace(/[\s\u200b-\u200d\ufeff–—-]/gu, "");
+                  setCodigo(valor);
+                  setFormatoInvalido(false);
+                  setErro("");
+                }}
               />
             </label>
+            {formatoInvalido && (
+              <p id="acesso-formato-codigo" role="alert">
+                {t("rapido.formatoCodigo")}
+              </p>
+            )}
           </>
         )}
         <button className="acesso-botao" disabled={ocupado}>
@@ -149,6 +172,7 @@ export function AcessoRapido({
             type="button"
             disabled={ocupado}
             onClick={() => {
+              setFormatoInvalido(false);
               setDestino("");
               setCodigo("");
               setErro("");
