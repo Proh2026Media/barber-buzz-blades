@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+**27/11/2026 — histórico da Externa.** A conciliação exige o mesmo par de provas em cada reserva da ficha. O e-mail ausente não é emprestado de outra linha; uma preposição sozinha não comprova sobrenome. Contatos de contas suspensas continuam contando para detectar ambiguidades. Suíte local com reversão aprovada e primeiro ciclo em produção concluído, com uma ficha para revisão e zero novos vínculos. [Critérios e sincronização](../scripts/externa/README.md).
+
 ## 26/11/2026 — Cruzamento do histórico da Externa
 
 O espelho reavalia as contas de clientes em cada ciclo, inclusive quando só o cadastro foi atualizado. A decisão cruza contatos confirmados com os dados originais da ficha. O painel global mostra as reservas atribuídas automaticamente e as fichas em revisão. Os critérios e a ordem de instalação estão no [guia da integração](../scripts/externa/README.md). O ensaio real inicial encontrou uma ficha para revisão e nenhuma reserva nova elegível. Os testes com dados fictícios cobrem cadastro, alteração posterior, repetição, contato compartilhado, titular anterior, nova reserva e leitura com as permissões do cliente.

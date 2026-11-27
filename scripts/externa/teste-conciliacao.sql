@@ -31,6 +31,20 @@ insert into manutencao.espelho_externa_linhas(chave,registro,situacao)
 select repeat('6',64),registro||'{"nome":"Outra Pessoa","linha":101}','pendente' from espelho_linhas where registro->>'linha'='2';
 select pg_temp.conferir((select motivo='identidade_divergente' from manutencao.externa_cruzamento),'nome original diferente bloqueia mesmo com o nome consolidado igual');
 rollback to candidato_seguro;
+-- As duas provas precisam valer para cada reserva: nenhuma linha empresta seu e-mail a outra.
+insert into manutencao.espelho_externa_linhas(chave,registro,situacao)
+select repeat('7',64),registro||'{"email":"","linha":102}','pendente' from espelho_linhas where registro->>'linha'='2';
+select pg_temp.conferir((select motivo='prova_insuficiente' from manutencao.externa_cruzamento),'um e-mail presente em outra reserva não soma evidência aqui');
+update auth.users set phone='5511990000000',phone_confirmed_at=now() where id=:'titular';
+select pg_temp.conferir((select criterio='telefone_nome' from manutencao.externa_cruzamento),'telefone confirmado e nome presentes em todas as linhas bastam mesmo com e-mail faltante');
+rollback to candidato_seguro;
+update manutencao.espelho_externa_linhas set registro=registro||'{"nome":"Lucia de"}' where registro->>'linha'='2';
+update public.profiles set full_name='Lucia de' where id=:'titular';
+select pg_temp.conferir((select motivo='prova_insuficiente' from manutencao.externa_cruzamento),'preposição não conta como sobrenome');
+rollback to candidato_seguro;
+update auth.users set phone='5511990000000',phone_confirmed_at=now(),banned_until=now()+interval '1 day' where id=:'rival';
+select pg_temp.conferir((select motivo='contato_compartilhado' from manutencao.externa_cruzamento),'contato de conta suspensa continua protegido');
+rollback to candidato_seguro;
 update public.shop_clients set profile_id=:'rival' where barbershop_id=:'loja';
 select manutencao.conciliar_historico_externa();
 select pg_temp.conferir(exists(select from manutencao.externa_historico_revisao where motivo='ficha_com_titular')

@@ -26,7 +26,8 @@ with linhas as materialized (
   where l.presente and l.situacao<>'excluida' and
     coalesce(l.registro->>'motivo','') not in ('teste','profissional','repetido')
 ), grupos as (
-  select telefone,min(linha) linha,array_agg(distinct nome) nomes,array_agg(distinct email) emails
+  select telefone,min(linha) linha,array_agg(distinct nome) nomes,array_remove(array_agg(distinct email),'') emails,
+    bool_and(email<>'') email_em_todas
   from linhas where telefone ~ '^\+[1-9][0-9]{7,14}$' group by telefone
 ), compartilhados as (
   select email from linhas where email<>'' group by email having count(distinct telefone)>1 or bool_or(telefone is null)
@@ -36,32 +37,38 @@ with linhas as materialized (
     case when p.whatsapp_verified_at is not null then p.whatsapp_e164 end tel_perfil,
     case when u.phone_confirmed_at is not null and u.phone ~ '^\+?[1-9][0-9]{7,14}$'
       then '+'||ltrim(u.phone,'+') end tel_auth,
-    exists(select from public.memberships m where m.user_id=u.id and m.role='customer'
+    (u.banned_until is null or u.banned_until<=now()) and exists(select from public.memberships m where m.user_id=u.id and m.role='customer'
       and m.barbershop_id='a5c2b03b-1e30-4446-b013-8cb8a9d8c447') as cliente
-  from auth.users u join public.profiles p on p.id=u.id
-  where u.deleted_at is null and u.is_anonymous is not true and (u.banned_until is null or u.banned_until<=now())
+  from auth.users u left join public.profiles p on p.id=u.id
+  where u.deleted_at is null and u.is_anonymous is not true
 ), candidatos as (
   select g.*,i.*, coalesce(i.email=any(g.emails),false) email_ok,
     coalesce(g.telefone in (i.tel_perfil,i.tel_auth),false) tel_ok,
-    i.nome=g.nomes[1] and i.nome ~ '^[[:alpha:]]{2,} .*[[:alpha:]]{2,}$' nome_ok,
+    i.nome=g.nomes[1] and i.nome ~ '^[[:alpha:]][[:alpha:]’''-]+( [[:alpha:]][[:alpha:]’''-]*)+$'
+      and (select count(*) from unnest(string_to_array(i.nome,' ')) palavra
+        where length(palavra)>=2 and palavra not in ('da','das','de','do','dos','e'))>=2 nome_ok,
     count(*) over(partition by telefone) contas, count(*) over(partition by conta) fichas
   from grupos g join identidades i on i.email=any(g.emails) or g.telefone in (i.tel_perfil,i.tel_auth)
+), evidencias as (
+  -- O e-mail vale como prova para a ficha inteira apenas se estiver em cada reserva.
+  -- O mesmo telefone confirmado em duas tabelas continua valendo um único ponto.
+  select c.*, email_ok and email_em_todas email_comum from candidatos c
 ), regras as (
   select c.*, case
     when contas<>1 or fichas<>1 or exists(select from compartilhados x where x.email=any(c.emails))
       then 'contato_compartilhado'
-    when cardinality(nomes)<>1 or cardinality(emails)<>1 or nomes[1]='' or (nome<>'' and nome<>nomes[1])
+    when cardinality(nomes)<>1 or cardinality(emails)>1 or nomes[1]='' or (nome<>'' and nome<>nomes[1])
       then 'identidade_divergente'
     when (email is not null and emails[1]<>'' and not email_ok)
       or (tel_perfil is not null and tel_perfil<>telefone) or (tel_auth is not null and tel_auth<>telefone)
       then 'contato_divergente'
-    when not ((email_ok and tel_ok) or ((email_ok or tel_ok) and nome_ok))
+    when email_comum::int + tel_ok::int + nome_ok::int < 2
       then 'prova_insuficiente'
   end motivo
-  from candidatos c where cliente
+  from evidencias c where cliente
 )
 select telefone,linha,conta,motivo,case when motivo is null then
-  case when email_ok and tel_ok then 'email_telefone' when email_ok then 'email_nome' else 'telefone_nome' end
+  case when email_comum and tel_ok then 'email_telefone' when email_comum then 'email_nome' else 'telefone_nome' end
 end criterio from regras;
 revoke all on manutencao.externa_cruzamento from public, anon, authenticated, service_role;
 
