@@ -678,7 +678,7 @@ export function ServicesTab({
                 own.duration_minutes !== service.duration_minutes);
             return (
               <CatalogCard
-                textoCompleto
+                servico
                 key={service.id}
                 id={`service-${service.id}`}
                 view={view}
@@ -687,11 +687,11 @@ export function ServicesTab({
                 onOpen={canEdit ? () => openForm(service) : undefined}
                 openLabel={t("shop.editAria", { name: service.name })}
                 media={
-                  <span
-                    className={`grid shrink-0 place-items-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-gold ${view === "grid" ? "size-12" : "size-10"}`}
-                  >
-                    <FotoServico nome={service.name} icone={service.icon} className="size-full" />
-                  </span>
+                  <FotoServico
+                    nome={service.name}
+                    icone={service.icon}
+                    className="foto-servico-catalogo"
+                  />
                 }
                 title={service.name}
                 subtitle={view === "grid" ? service.description : undefined}

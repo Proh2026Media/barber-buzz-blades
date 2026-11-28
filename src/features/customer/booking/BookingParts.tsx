@@ -240,19 +240,12 @@ export function ServiceChoices<S extends ServicoVisivel>({
           "grade-servicos grid gap-2",
           view === "list"
             ? "grid-cols-1"
-            : "grid-cols-2 max-[359px]:grid-cols-1 tablet:grid-cols-3",
+            : "grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))]",
         )}
       >
         {services.map((service, index) => {
           const selected = index === selectedIndex;
           const terms = termsFor(service);
-          const icon = (
-            <FotoServico
-              nome={service.name}
-              icone={service.icon}
-              className="foto-servico-catalogo"
-            />
-          );
           return (
             <button
               key={service.id}
@@ -260,23 +253,14 @@ export function ServiceChoices<S extends ServicoVisivel>({
               disabled={disabled}
               aria-pressed={selected}
               onClick={() => onPick(index)}
-              className={cn(
-                SELECT_CARD,
-                selected ? SELECT_ON : SELECT_OFF,
-                view === "list"
-                  ? "items-center gap-3"
-                  : "flex-col items-start justify-center gap-2",
-              )}
+              className={cn(SELECT_CARD, selected ? SELECT_ON : SELECT_OFF, "items-center gap-3")}
             >
-              {view === "list" ? (
-                icon
-              ) : (
-                <span className="flex w-full items-start justify-between gap-2">
-                  {icon}
-                  <SelectCheck selected={selected} />
-                </span>
-              )}
-              <span className={cn("min-w-0 space-y-1.5", view === "list" ? "flex-1" : "w-full")}>
+              <FotoServico
+                nome={service.name}
+                icone={service.icon}
+                className="foto-servico-catalogo"
+              />
+              <span className="min-w-0 flex-1 space-y-1.5">
                 <span className="brand-content-title block text-sm font-bold hyphens-auto [overflow-wrap:anywhere]">
                   {service.name}
                 </span>
@@ -291,7 +275,7 @@ export function ServiceChoices<S extends ServicoVisivel>({
                   />
                 ) : null}
               </span>
-              {view === "list" && <SelectCheck selected={selected} />}
+              <SelectCheck selected={selected} />
             </button>
           );
         })}

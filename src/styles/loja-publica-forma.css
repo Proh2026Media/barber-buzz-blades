@@ -217,6 +217,7 @@
 .cartao-catalogo {
   --recuo-catalogo: 12px;
   --borda-catalogo: 1px;
+  --largura-foto-servico: clamp(44px, 22%, 80px);
   --canto-midia: max(
     var(--detail-radius),
     calc(var(--panel-radius) - var(--recuo-catalogo) - var(--borda-catalogo))
@@ -231,10 +232,33 @@
 .cartao-catalogo :is(.foto-servico, .retrato-profissional) {
   border-radius: var(--canto-midia);
 }
+/* A altura vem do texto e da linha da grade. A imagem ocupa o espaço interno até as bordas. */
 .foto-servico-catalogo {
-  width: 72px;
-  height: 72px;
+  inline-size: var(--largura-foto-servico);
+  min-block-size: 64px;
+  align-self: stretch;
   flex: none;
+}
+.foto-servico-catalogo img,
+.previa-servico button.foto-servico-catalogo > .foto-servico {
+  position: absolute;
+  inset: 0;
+}
+.cartao-catalogo.cartao-servico-gestao {
+  position: relative;
+  padding: var(--recuo-catalogo);
+  padding-inline-start: calc(var(--recuo-catalogo) * 2 + var(--largura-foto-servico));
+  min-block-size: calc(64px + 2 * (var(--recuo-catalogo) + var(--borda-catalogo)));
+}
+.cartao-servico-gestao .midia-servico-gestao {
+  position: absolute;
+  inset-block: var(--recuo-catalogo);
+  inset-inline-start: var(--recuo-catalogo);
+  inline-size: var(--largura-foto-servico);
+}
+.midia-servico-gestao > .foto-servico-catalogo {
+  inline-size: 100%;
+  block-size: 100%;
 }
 .previa-servico button.foto-servico-catalogo {
   border-radius: var(--canto-midia) !important;

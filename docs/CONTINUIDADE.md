@@ -1,5 +1,7 @@
 # Transição para a próxima IA — Barba & Cabelo
 
+**28/11/2026.** As fotos dos serviços acompanham a altura interna dos cartões na vitrine, no perfil do profissional, no agendamento e nos cartões e na prévia da gestão. Topo, base e lateral da foto usam o mesmo recuo de 12 px. A largura se adapta à coluna e a imagem mantém suas proporções ao preencher o espaço.
+
 **28/11/2026.** A lista de serviços passa a dimensionar todas as linhas pela descrição mais longa na largura disponível. As fotos de 72 × 72 px ficam centralizadas nos cartões horizontais. A prévia do editor acompanha o espaço do painel e o catálogo se reajusta ao editar, filtrar ou redimensionar.
 
 **27/11/2026.** A abertura usa a identidade pública do domínio já no HTML. A vitrine, o perfil profissional, o acesso e o agendamento preparam as fontes antes de exibir os textos. Em rede indisponível a página abre com uma fonte local estável. A gestão aguarda o cadastro visual da loja. Na vitrine, no perfil e no agendamento, as imagens de serviço medem 72 × 72 px. O recuo superior e lateral de 12 px define o canto interno conforme o capítulo Cantos do brand kit.

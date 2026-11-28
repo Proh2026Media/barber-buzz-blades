@@ -1,6 +1,6 @@
 # Pendências — lista única e priorizada
 
-**28/11/2026.** Cartões de serviço com altura uniforme, recuos verticais simétricos e prévia responsiva.
+**28/11/2026.** Cartões de serviço com altura uniforme e fotos que acompanham a altura de cada cartão. Topo, base e lateral seguem o mesmo recuo de 12 px, inclusive na prévia.
 
 **27/11/2026.** Primeira pintura da loja e da tipografia e recuo dos cartões de serviço ajustados na vitrine, no perfil e no agendamento.
 

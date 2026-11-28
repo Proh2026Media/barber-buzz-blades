@@ -415,7 +415,7 @@ export function ServiceForm({
   );
 
   const previewCard = (
-    <div className="cartao-catalogo previa-servico flex min-w-0 flex-wrap items-center gap-3 rounded-[var(--panel-radius)] border border-border bg-card">
+    <div className="cartao-catalogo previa-servico flex min-w-0 items-center gap-3 rounded-[var(--panel-radius)] border border-border bg-card">
       <button
         type="button"
         onClick={() => setPickerOpen((value) => !value)}
@@ -425,7 +425,7 @@ export function ServiceForm({
       >
         <FotoServico nome={name} icone={icon} className="size-full" />
       </button>
-      <span className="min-w-0 flex-[1_1_8rem] space-y-1.5 [overflow-wrap:anywhere]">
+      <span className="min-w-0 flex-1 space-y-1.5 [overflow-wrap:anywhere]">
         <span
           className={cn(
             "brand-content-title block break-words text-sm font-bold hyphens-auto",

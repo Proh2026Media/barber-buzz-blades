@@ -22,7 +22,7 @@ export function CatalogCard({
   media,
   title,
   subtitle,
-  textoCompleto = false,
+  servico = false,
   facts,
   extra,
   status,
@@ -40,7 +40,7 @@ export function CatalogCard({
   media: ReactNode;
   title: string;
   subtitle?: ReactNode;
-  textoCompleto?: boolean;
+  servico?: boolean;
   facts?: ReactNode;
   /** Linha extra de contexto (o dia do profissional, quem faz o serviço…). */
   extra?: ReactNode;
@@ -63,12 +63,20 @@ export function CatalogCard({
       .join(" ") || undefined;
   const body = (
     <>
-      <span className={cn("shrink-0 transition", paused && "opacity-55 grayscale")}>{media}</span>
+      <span
+        className={cn(
+          "shrink-0 transition",
+          servico && "midia-servico-gestao",
+          paused && "opacity-55 grayscale",
+        )}
+      >
+        {media}
+      </span>
       <span className="min-w-0 flex-1 space-y-1.5">
         <span
           className={cn(
             "brand-content-title block break-words text-sm font-bold hyphens-auto",
-            textoCompleto ? "[overflow-wrap:anywhere]" : "line-clamp-2",
+            servico ? "[overflow-wrap:anywhere]" : "line-clamp-2",
           )}
         >
           {title}
@@ -78,7 +86,7 @@ export function CatalogCard({
             id={subtitleId}
             className={cn(
               "block text-xs text-muted-foreground",
-              textoCompleto ? "whitespace-pre-line [overflow-wrap:anywhere]" : "line-clamp-1",
+              servico ? "whitespace-pre-line [overflow-wrap:anywhere]" : "line-clamp-1",
             )}
           >
             {subtitle}
@@ -123,6 +131,7 @@ export function CatalogCard({
         id={id}
         className={cn(
           "flex scroll-mt-28 items-center gap-2 rounded-2xl border bg-card p-2 pl-3 transition-shadow",
+          servico && "cartao-catalogo cartao-servico-gestao",
           highlight ? "border-primary ring-2 ring-primary/30" : "border-border",
         )}
       >
@@ -137,6 +146,7 @@ export function CatalogCard({
     <article
       id={id}
       className={cn(
+        servico && "cartao-catalogo cartao-servico-gestao",
         "catalog-card flex scroll-mt-28 flex-col gap-3 rounded-2xl border bg-card p-3 transition-shadow",
         highlight ? "border-primary ring-2 ring-primary/30" : "border-border",
       )}
