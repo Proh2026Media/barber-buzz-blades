@@ -631,7 +631,7 @@ export function ShopLandingView({
               </h2>
               <ul
                 className={cn(
-                  "grid gap-2",
+                  "grade-servicos grid gap-2",
                   wide &&
                     "tablet:grid-cols-2 tablet:gap-3 lg:grid-cols-1 lg:gap-2 pc:grid-cols-2 pc:gap-3",
                 )}

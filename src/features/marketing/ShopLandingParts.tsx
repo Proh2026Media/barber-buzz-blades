@@ -445,7 +445,7 @@ export function ServiceRow({
       {reserva && <ChevronRight className="size-4 shrink-0 self-center" aria-hidden />}
     </>
   );
-  const classe = "conteudo-servico flex h-full min-w-0 items-start gap-3 sm:gap-4";
+  const classe = "conteudo-servico flex h-full min-w-0 items-center gap-3 sm:gap-4";
   return (
     <li className="public-card cartao-catalogo min-w-0 rounded-[var(--panel-radius)] border border-border">
       {reserva ? (

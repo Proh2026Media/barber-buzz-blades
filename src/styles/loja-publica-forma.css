@@ -210,6 +210,10 @@
 .retrato-profissional {
   border-radius: var(--detail-radius);
 }
+/* Cada lista acompanha o maior conteúdo, inclusive entre linhas e ao mudar a largura. */
+.grade-servicos {
+  grid-auto-rows: 1fr;
+}
 .cartao-catalogo {
   --recuo-catalogo: 12px;
   --borda-catalogo: 1px;
@@ -220,6 +224,7 @@
   border-width: var(--borda-catalogo);
 }
 .cartao-catalogo > .conteudo-servico,
+.previa-servico,
 .arena-workspace .cartao-catalogo {
   padding: var(--recuo-catalogo);
 }
@@ -230,7 +235,9 @@
   width: 72px;
   height: 72px;
   flex: none;
-  align-self: flex-start;
+}
+.previa-servico button.foto-servico-catalogo {
+  border-radius: var(--canto-midia) !important;
 }
 .perfil-capa {
   overflow: hidden;

@@ -161,7 +161,7 @@ export function PerfilProfissional({ perfil }: { perfil: PerfilPublico }) {
               <ListChecks className="size-5 text-[var(--brand-accent-readable)]" aria-hidden />
               {t("shopLanding.servicesTitle")}
             </h2>
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grade-servicos grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {servicos.map((s) => (
                 <ServiceRow
                   key={s.id}

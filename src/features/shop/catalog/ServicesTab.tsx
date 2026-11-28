@@ -63,13 +63,29 @@ const normalize = (value: string) =>
  * 1024 e 1280, 4 a 1536; mínimo de 17.5rem para caberem 3 em 1024; src/styles/catalogo.css mantém 2 colunas entre 640 e 767 px como antes)
  * ou a lista compacta de uma coluna.
  */
-export function CatalogItems({ view, children }: { view: CatalogViewMode; children: ReactNode }) {
+export function CatalogItems({
+  view,
+  children,
+  alturaUniforme = false,
+}: {
+  view: CatalogViewMode;
+  children: ReactNode;
+  alturaUniforme?: boolean;
+}) {
   return view === "grid" ? (
-    <CardGrid min="17.5rem" gap="0.75rem" className="catalog-grid">
+    <CardGrid
+      min="17.5rem"
+      gap="0.75rem"
+      className={cn("catalog-grid", alturaUniforme && "grade-servicos")}
+    >
       {children}
     </CardGrid>
   ) : (
-    <div className="flex flex-col gap-2">{children}</div>
+    <div
+      className={cn("gap-2", alturaUniforme ? "grade-servicos grid grid-cols-1" : "flex flex-col")}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -653,7 +669,7 @@ export function ServicesTab({
           rowKey={(service) => service.id}
         />
       ) : (
-        <CatalogItems view={view}>
+        <CatalogItems view={view} alturaUniforme>
           {visible.map((service) => {
             const own = ownCatalog ? shopTerms[service.id] : undefined;
             const differs =
@@ -662,6 +678,7 @@ export function ServicesTab({
                 own.duration_minutes !== service.duration_minutes);
             return (
               <CatalogCard
+                textoCompleto
                 key={service.id}
                 id={`service-${service.id}`}
                 view={view}

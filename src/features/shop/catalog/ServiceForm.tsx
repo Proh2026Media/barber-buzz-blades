@@ -415,17 +415,17 @@ export function ServiceForm({
   );
 
   const previewCard = (
-    <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-3">
+    <div className="cartao-catalogo previa-servico flex min-w-0 flex-wrap items-center gap-3 rounded-[var(--panel-radius)] border border-border bg-card">
       <button
         type="button"
         onClick={() => setPickerOpen((value) => !value)}
         aria-label={t("catalog.service.changeImage")}
         aria-expanded={pickerOpen}
-        className="relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-[var(--detail-radius)] bg-muted text-gold ring-offset-2 transition hover:ring-2 hover:ring-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        className="foto-servico-catalogo relative grid place-items-center overflow-hidden bg-muted text-gold ring-offset-2 transition hover:ring-2 hover:ring-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         <FotoServico nome={name} icone={icon} className="size-full" />
       </button>
-      <span className="min-w-0 flex-1 space-y-1.5">
+      <span className="min-w-0 flex-[1_1_8rem] space-y-1.5 [overflow-wrap:anywhere]">
         <span
           className={cn(
             "brand-content-title block break-words text-sm font-bold hyphens-auto",

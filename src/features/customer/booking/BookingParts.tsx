@@ -234,60 +234,68 @@ export function ServiceChoices<S extends ServicoVisivel>({
 }) {
   const { t } = useI18n();
   return (
-    <div
-      className={
-        // Cada etapa divide o espaço com a outra desde o tablet: lista com uma opção por linha.
-        view === "list"
-          ? "booking-choice-list flex flex-col gap-2"
-          : "grid grid-cols-2 gap-2 max-[359px]:grid-cols-1 tablet:grid-cols-3"
-      }
-    >
-      {services.map((service, index) => {
-        const selected = index === selectedIndex;
-        const terms = termsFor(service);
-        const icon = (
-          <FotoServico nome={service.name} icone={service.icon} className="foto-servico-catalogo" />
-        );
-        return (
-          <button
-            key={service.id}
-            type="button"
-            disabled={disabled}
-            aria-pressed={selected}
-            onClick={() => onPick(index)}
-            className={cn(
-              SELECT_CARD,
-              selected ? SELECT_ON : SELECT_OFF,
-              view === "list" ? "items-start gap-3" : "flex-col gap-2",
-            )}
-          >
-            {view === "list" ? (
-              icon
-            ) : (
-              <span className="flex w-full items-start justify-between gap-2">
-                {icon}
-                <SelectCheck selected={selected} />
+    <div className={view === "list" ? "booking-choice-list" : undefined}>
+      <div
+        className={cn(
+          "grade-servicos grid gap-2",
+          view === "list"
+            ? "grid-cols-1"
+            : "grid-cols-2 max-[359px]:grid-cols-1 tablet:grid-cols-3",
+        )}
+      >
+        {services.map((service, index) => {
+          const selected = index === selectedIndex;
+          const terms = termsFor(service);
+          const icon = (
+            <FotoServico
+              nome={service.name}
+              icone={service.icon}
+              className="foto-servico-catalogo"
+            />
+          );
+          return (
+            <button
+              key={service.id}
+              type="button"
+              disabled={disabled}
+              aria-pressed={selected}
+              onClick={() => onPick(index)}
+              className={cn(
+                SELECT_CARD,
+                selected ? SELECT_ON : SELECT_OFF,
+                view === "list"
+                  ? "items-center gap-3"
+                  : "flex-col items-start justify-center gap-2",
+              )}
+            >
+              {view === "list" ? (
+                icon
+              ) : (
+                <span className="flex w-full items-start justify-between gap-2">
+                  {icon}
+                  <SelectCheck selected={selected} />
+                </span>
+              )}
+              <span className={cn("min-w-0 space-y-1.5", view === "list" ? "flex-1" : "w-full")}>
+                <span className="brand-content-title block text-sm font-bold hyphens-auto [overflow-wrap:anywhere]">
+                  {service.name}
+                </span>
+                <DescricaoServico nome={service.name} descricao={service.description} />
+                <ServiceFacts terms={terms} formatMoney={formatMoney} />
+                {selected && suggested ? (
+                  <StatusBadge
+                    tone="highlight"
+                    icon={Sparkles}
+                    label={t("booking.suggested")}
+                    size="sm"
+                  />
+                ) : null}
               </span>
-            )}
-            <span className="min-w-0 flex-1 space-y-1.5">
-              <span className="brand-content-title line-clamp-2 block break-normal text-sm font-bold hyphens-auto">
-                {service.name}
-              </span>
-              <DescricaoServico nome={service.name} descricao={service.description} />
-              <ServiceFacts terms={terms} formatMoney={formatMoney} />
-              {selected && suggested ? (
-                <StatusBadge
-                  tone="highlight"
-                  icon={Sparkles}
-                  label={t("booking.suggested")}
-                  size="sm"
-                />
-              ) : null}
-            </span>
-            {view === "list" && <SelectCheck selected={selected} />}
-          </button>
-        );
-      })}
+              {view === "list" && <SelectCheck selected={selected} />}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

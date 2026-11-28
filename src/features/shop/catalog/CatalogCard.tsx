@@ -22,6 +22,7 @@ export function CatalogCard({
   media,
   title,
   subtitle,
+  textoCompleto = false,
   facts,
   extra,
   status,
@@ -39,6 +40,7 @@ export function CatalogCard({
   media: ReactNode;
   title: string;
   subtitle?: ReactNode;
+  textoCompleto?: boolean;
   facts?: ReactNode;
   /** Linha extra de contexto (o dia do profissional, quem faz o serviço…). */
   extra?: ReactNode;
@@ -63,11 +65,22 @@ export function CatalogCard({
     <>
       <span className={cn("shrink-0 transition", paused && "opacity-55 grayscale")}>{media}</span>
       <span className="min-w-0 flex-1 space-y-1.5">
-        <span className="brand-content-title line-clamp-2 block break-words text-sm font-bold hyphens-auto">
+        <span
+          className={cn(
+            "brand-content-title block break-words text-sm font-bold hyphens-auto",
+            textoCompleto ? "[overflow-wrap:anywhere]" : "line-clamp-2",
+          )}
+        >
           {title}
         </span>
         {subtitle ? (
-          <span id={subtitleId} className="line-clamp-1 block text-xs text-muted-foreground">
+          <span
+            id={subtitleId}
+            className={cn(
+              "block text-xs text-muted-foreground",
+              textoCompleto ? "whitespace-pre-line [overflow-wrap:anywhere]" : "line-clamp-1",
+            )}
+          >
             {subtitle}
           </span>
         ) : null}
